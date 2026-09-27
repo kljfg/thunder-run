@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>雷霆酷跑 · 网页版</title>
+  <link rel="stylesheet" href="./style.css">
+  <!-- Three.js 以本地 vendor 文件提供，无网络依赖；路径对应 tsconfig paths -->
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <!-- 所有页面与画布都渲染进 #screen（ui/screens.ts 与 bootstrap.ts 共用此容器） -->
+  <main id="screen"></main>
+  <script type="module" src="./dist/game/bootstrap.js"></script>
+</body>
+</html>
