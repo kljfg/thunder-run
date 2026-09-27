@@ -23,12 +23,18 @@
 ```
 波次0  S1 小修快跑（validate-config 修复、脚本收敛）      [基于 origin/main]
 波次1  S2 monorepo 搬迁（M5，串行瓶颈，全局等待）          [基于 origin/main，合入后 dev=新结构]
-波次2  S3 平台层 v2 + platform-wx 骨架 + three 空场景跑通  [依赖 S2]
-       S4 UI 自绘框架内核（控件库+SDF 工具链）             [依赖 S2]
+波次1.5（与 S2 并行，全部纯新增文件、零冲突；spike 产物供下游搬运）
+       S10 PlatformAdapter v2 接口规格                     [纯文档+类型草案 → 喂 S3/S4]
+       S11 three×微信小游戏可行性 spike                    [→ 喂 S3/S6，M6 最大风险前置]
+       S12 SDF 字体工具链                                  [→ 喂 S4]
+       S13 UI 布局/命中纯逻辑内核                          [→ 喂 S4]
+       S14 config 热更新 manifest schema+publish 原型      [→ 喂 S8]
+波次2  S3 平台层 v2 + platform-wx 骨架 + three 空场景跑通  [依赖 S2；消费 S10 规格+S11 结论]
+       S4 UI 自绘框架内核（控件库+SDF 工具链）             [依赖 S2；消费 S12+S13 产物]
 波次3  S5 五页面迁移（screens.ts 退役）                    [依赖 S3+S4]
-       S6 apps/wx 构建管线（game.json/分包/产物组装）       [依赖 S3]
+       S6 apps/wx 构建管线（game.json/分包/产物组装）       [依赖 S3；消费 S11 垫片结论]
 波次4  S7 真机性能验证+降级预案（M6 验收）                 [依赖 S5+S6]
-       S8 内容管线：分包资源+config 热更新 manifest(T2.5)  [依赖 S6]
+       S8 内容管线：分包资源+config 热更新 manifest(T2.5)  [依赖 S6；消费 S14 schema]
 波次5  S9 平台能力：wx.login/云存档/开放数据域排行/分享     [依赖 S6+S8，需 AppID+云环境]
 ```
 
@@ -240,6 +246,102 @@ apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空
 汇报：各子项状态、云环境资源用量初值、审核材料缺口（自审报告/隐私接口声明）。
 ```
 
+## 2.5 波次1.5 提示词（与 S2 并行，只新增文件）
+
+### S10 · PlatformAdapter v2 接口规格（纯设计）
+
+```text
+你负责为 雷霆酷跑 设计 PlatformAdapter v2 接口规格（分支 feat/s10-adapter-spec，基于 dev）。
+先读 AGENTS.md、docs/wx-minigame-redesign.md §3.1、src/platform/platformAdapter.ts（现 v1）。
+约束：只新增文件，禁止修改任何既有文件（另一会话正在做全量目录搬迁）。
+产出：
+1. docs/platform-adapter-v2.md：完整接口签名——CanvasFactory（去 DOM 类型的 WebGL canvas 抽象）、
+   onInput（手势+键盘统一事件模型）、storage/fetchJson/requestFrame/cancelFrame/onVisibility/now、
+   WxExtras 可选注入接口（login/share/cloud/readJson/readBinary，S8/S9 用）；
+   每个方法的 web/wx 实现映射表；迁移注记：render/game/ui 哪些调用点需要改、怎么改。
+2. drafts/platform-adapter-v2.ts：可编译的类型草案（含最小 wx 全局类型声明，自包含），
+   用 node tools/vendor/typescript/lib/tsc.js --noEmit 单独验证（不要挂进仓库 tsconfig）。
+验收：类型草案 --noEmit 通过；v1 接口所有方法在规格中 100% 有去向（保留/改名/合并/删除+理由）。
+汇报：接口关键设计决策清单（协调者评审后下发 S3/S4 作为实现契约）。
+```
+
+### S11 · three×微信小游戏可行性 spike（M6 最大风险前置）
+
+```text
+你负责 雷霆酷跑 的 three.js×微信小游戏可行性 spike（分支 feat/s11-wx-spike，基于 dev），
+这是 docs/wx-minigame-redesign.md §7 风险1 的前置验证。先读 AGENTS.md 与该文档 §3.2。
+约束：只在 spike/wx-three/ 下新增文件（自带 package.json，npm i three 用与 vendor 一致的版本），
+禁止修改仓库任何既有文件。
+任务：
+1. 最小小游戏工程：game.js/game.json/project.config.json（appid 占位），three 渲染
+   旋转立方体 + 一张纹理贴图平面，固定步长 60fps 循环，触摸事件打日志。
+2. 对比两条垫片路线并给出选择：A) 官方 weapp-adapter；B) 自写最小垫片（只喂 WebGLRenderer 必需的
+   canvas/getContext/全局对象）。记录各自坑点：纹理加载(Image/createImageBitmap)、DPR、canvas 事件、内存。
+3. 用微信开发者工具跑通并记录性能面板帧率/内存基线；写一份真机测试步骤清单（协调者转交用户执行）。
+开发者工具不可用则：完成全部构建产物+文档后报告阻塞。
+产出：spike/wx-three/ 工程 + spike/wx-three/README.md（路线结论、坑清单、给 platform-wx 的垫片形态建议）。
+汇报：A/B 路线结论与依据、性能数字、S3 必须规避的坑清单。
+```
+
+### S12 · SDF 字体工具链（S4 前置）
+
+```text
+你负责 雷霆酷跑 的 SDF 位图字体工具链（分支 feat/s12-sdf-font，基于 dev），供 S4 自绘 UI 的 Label 使用。
+先读 AGENTS.md 与 docs/wx-minigame-redesign.md §3.3。
+约束：只新增文件；工具自包含在 tools/fontgen/（自己的 package.json，可用 opentype.js、tiny-sdf 等，
+不要改根 package.json——另一会话正在搬迁工程结构）；生成产物放 assets/fonts/。
+任务：
+1. tools/fontgen/gen.mjs：输入 TTF + 字符集清单，输出 SDF 图集 PNG（padding/尺寸可配）+
+   metrics.json（每字形 bbox/advance/scale 约定）。系统字体先探测可用性（C:\Windows\Fonts\simhei.ttf、msyh.ttc 等）。
+2. tools/fontgen/charset.mjs：扫描 src/ui/screens.ts 与 config/*.json 出现的全部中文字符+ASCII 可打印集，
+   输出 charset.txt（dev 基线上 screens.ts 还在 src/ui/，按此路径）。
+3. assets/fonts/README.md：使用规格——坐标系、SDF spread/size 参数、three shader 采样约定，S4 照此对接。
+4. tests/fontgen.test.mjs（node:test）：生成确定性（同输入两次产物哈希一致）、metrics 字段完备、
+   字符集覆盖；只 import tools/fontgen 不 import dist；fontgen 依赖未安装时用例 skip 并提示安装命令。
+5. 实际生成 latin+中文 两张图集并自查可读（尺寸/字数写进汇报）。
+验收：node --test tests/fontgen.test.mjs 全绿（或依赖缺失时 skip 逻辑正确）。
+汇报：产物清单、图集尺寸/字符数、SDF 参数、给 S4 的接口约定摘要。
+```
+
+### S13 · UI 布局/命中纯逻辑内核（S4 前置）
+
+```text
+你负责 雷霆酷跑 自绘 UI 的纯逻辑内核原型（分支 feat/s13-ui-layout，基于 dev），供 S4 搬运进 packages/ui。
+先读 AGENTS.md、docs/wx-minigame-redesign.md §3.3、src/ui/screens.ts（现有页面的布局与交互需求）。
+约束：只在 spike/ui-layout/ 下新增文件（自带 tsconfig+package.json，不改根 package.json）；
+纯 TS：禁止 import three/DOM/仓库 src 代码——产物必须能整体平移进 packages/ui。
+任务：
+1. 布局引擎：flex 子集（row/column、gap/padding/margin、align/justify、固定+百分比尺寸、滚动裁剪），
+   输入约束树输出矩形树，纯函数无副作用。
+2. 命中与手势分发：矩形树命中测试、冒泡/捕获、按压态生命周期；ScrollView 惯性滚动物理
+   （摩擦/回弹，参数化，手感参数结构对齐 config/game.json 未来 ui 段）。
+3. 控件状态机：Button(normal/pressed/disabled)、List 虚拟滚动窗口计算（S4 按窗口渲染可见项）。
+4. node:test ≥30 例：嵌套布局、百分比、滚动裁剪、命中优先级、惯性衰减收敛、回弹、虚拟窗口边界。
+   测试跑在 spike 内部（npm test），不挂根 check.mjs，避免干扰搬迁会话。
+5. spike/ui-layout/API.md：对外 API 契约（S4 接 three overlay 的唯一依据）。
+验收：spike 内 npm i && npm test 全绿。
+汇报：API 摘要、用例数、明确不支持的 CSS 特性清单。
+```
+
+### S14 · config 热更新 manifest 原型（S8 前置）
+
+```text
+你负责 雷霆酷跑 的配置热更新 manifest 原型（分支 feat/s14-manifest，基于 dev），供 S8（原 T2.5）。
+先读 AGENTS.md、docs/wx-minigame-redesign.md §3.5、src/core/config/configLoader.ts（现有缓存链）。
+约束：只新增文件（tools/publish-content.mjs、docs/manifest-schema.md、tests/manifest.test.mjs），
+不改任何既有文件；工具只用 node 内置模块（sha256 用 node:crypto），零新依赖。
+任务：
+1. docs/manifest-schema.md：manifest 结构（版本号/每文件 sha256/URL/minClient）；客户端拉取降级链
+   （manifest→CDN 新哈希→包内兜底）；缓存键规范（兼容现有 thunderrun:config: 前缀的演进方案）；失败策略表。
+2. tools/publish-content.mjs：扫描 config/*.json 生成 manifest.json + 产物复制到 out/（本地目录模拟 CDN）；
+   --diff 对比上次 manifest 输出变更清单；--upload 留接口（S8 接云存储时实装）。
+3. tests/manifest.test.mjs：生成确定性、diff 正确、哈希校验、降级链决策（mock FileSource）；
+   不 import dist（避免与搬迁会话耦合）。
+4. 本任务不许改 config/*.json 的任何数值（只读）；提醒：config 数值改动需 docs 库双向同步。
+验收：node --test tests/manifest.test.mjs 全绿；演示一次生成 + --diff 输出。
+汇报：schema 要点、降级链决策表、给 S8 的接口预留点。
+```
+
 ## 3. 状态登记板
 
 | 会话 | 任务 | 波次 | 依赖 | 状态 | 分支 | 备注 |
@@ -253,6 +355,11 @@ apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空
 | S7 | 真机性能关 | 4 | S5,S6 | 待派发 | feat/s7-perf | 需真机 |
 | S8 | CDN+热更新 | 4 | S6 | 待派发 | feat/s8-content | 需云环境 |
 | S9 | 社交/登录/存档 | 5 | S6,S8 | 待派发 | feat/s9-social | 需正式 AppID |
+| S10 | Adapter v2 规格 | 1.5 | - | 待派发 | feat/s10-adapter-spec | 纯文档+类型草案 |
+| S11 | three×wx spike | 1.5 | - | 待派发 | feat/s11-wx-spike | 需微信开发者工具 |
+| S12 | SDF 字体工具链 | 1.5 | - | 待派发 | feat/s12-sdf-font | 产物供 S4 搬运 |
+| S13 | UI 布局纯逻辑内核 | 1.5 | - | 待派发 | feat/s13-ui-layout | 产物供 S4 搬运 |
+| S14 | manifest 原型 | 1.5 | - | 待派发 | feat/s14-manifest | schema 供 S8 |
 
 状态取值：待派发 / 进行中 / 阻塞:<原因> / 待评审 / 已合并@<commit>
 
@@ -261,4 +368,6 @@ apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空
 - 你汇报状态时，我只做三件事：更新登记板 → 判定是否放行下游 → 必要时改写尚未派发的提示词（接口变化传导）。
 - 已派发会话的提示词不再改；其产出的接口漂移由合并评审吸收，冲突时先合入者赢，后者 rebase。
 - 波次1 是唯一硬串行点；S3/S4、S5/S6、S7/S8 是安全并行对。
+- 波次1.5（S10-S14）与 S2 并行：全部约束为纯新增文件，互相之间及与 S2 均零路径冲突，任意顺序合入 dev。
+  合并后把各会话汇报（接口契约/坑清单/schema）注入对应下游会话（S3←S10+S11、S4←S12+S13、S6←S11、S8←S14）的派发提示词。
 - 涉及 config/*.json 的改动，合并前检查「docs 库同步」待办是否记入汇报。
