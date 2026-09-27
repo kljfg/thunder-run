@@ -1,0 +1,14 @@
+{
+  "description": "S11 spike route A: official weapp-adapter + three patch",
+  "projectname": "wx-three-spike-a",
+  "appid": "touristappid",
+  "compileType": "game",
+  "setting": {
+    "es6": true,
+    "postcss": false,
+    "minified": false,
+    "urlCheck": false,
+    "compileHotReLoad": false
+  },
+  "condition": {}
+}

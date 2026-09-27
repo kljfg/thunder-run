@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>wx-three spike preview</title>
+  <style>html,body{margin:0;background:#000;overflow:hidden}</style>
+</head>
+<body>
+  <script src="wxmock.js"></script>
+  <script>
+    // ?route=b（默认，最小垫片）| ?route=a（仅语法级加载；adapter 在浏览器不保真，见 README）
+    var route = new URLSearchParams(location.search).get('route') || 'b';
+    window.__spikeRoute = route;
+    var s = document.createElement('script');
+    s.src = '../minigame-' + route + '/game.js';
+    s.onerror = function () { document.title = 'BUNDLE LOAD FAIL'; };
+    document.body.appendChild(s);
+  </script>
+</body>
+</html>

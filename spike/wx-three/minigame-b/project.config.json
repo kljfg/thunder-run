@@ -1,0 +1,14 @@
+{
+  "description": "S11 spike route B: minimal hand-written shim",
+  "projectname": "wx-three-spike-b",
+  "appid": "touristappid",
+  "compileType": "game",
+  "setting": {
+    "es6": true,
+    "postcss": false,
+    "minified": false,
+    "urlCheck": false,
+    "compileHotReLoad": false
+  },
+  "condition": {}
+}

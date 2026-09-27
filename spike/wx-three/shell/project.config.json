@@ -1,0 +1,14 @@
+{
+  "description": "__DESCRIPTION__",
+  "projectname": "__PROJECTNAME__",
+  "appid": "touristappid",
+  "compileType": "game",
+  "setting": {
+    "es6": true,
+    "postcss": false,
+    "minified": false,
+    "urlCheck": false,
+    "compileHotReLoad": false
+  },
+  "condition": {}
+}
