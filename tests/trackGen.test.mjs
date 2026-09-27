@@ -10,8 +10,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TrackGen } from '../dist/core/sim/trackGen.js';
-import { RunRng } from '../dist/core/rng.js';
+import { TrackGen } from '../packages/core/dist/sim/trackGen.js';
+import { RunRng } from '../packages/core/dist/rng.js';
 
 const root = join(fileURLToPath(import.meta.url), '..', '..');
 const NAMES = ['game', 'characters', 'skills', 'items', 'obstacles', 'themes', 'events', 'economy'];

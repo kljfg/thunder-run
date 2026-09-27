@@ -4,7 +4,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSceneMachine } from '../dist/core/scene/sceneMachine.js';
+import { createSceneMachine } from '../packages/core/dist/scene/sceneMachine.js';
 
 test('切换顺序：exit(prev) → enter(next) → 通知监听', () => {
   const log = [];

@@ -1,0 +1,16 @@
+{
+  "name": "@tr/render",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "three.js 场景层：只读 sim 做表现。允许依赖 three 与 @tr/core/@tr/platform 类型，禁止 DOM 全局。",
+  "exports": { "./*": "./dist/*" },
+  "dependencies": {
+    "@tr/core": "*",
+    "@tr/platform": "*",
+    "three": "0.160.1"
+  },
+  "devDependencies": {
+    "@types/three": "0.160.0"
+  }
+}

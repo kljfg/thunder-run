@@ -3,9 +3,9 @@
  * 职责：只画页面、收集用户操作并通过回调抛出去；不做任何游戏逻辑。
  * M0 阶段登录为「本地校验 + 游客进入」，真实账号接口在 M3（docs/04）接入。
  */
-import type { GameContent } from '../core/config/configTypes.js';
-import type { FileSource } from '../core/config/configLoader.js';
-import { buildLoadout, playableCharacters, type Loadout } from '../core/sim/character.js';
+import type { GameContent } from '@tr/core/config/configTypes.js';
+import type { FileSource } from '@tr/core/config/configLoader.js';
+import { buildLoadout, playableCharacters, type Loadout } from '@tr/core/sim/character.js';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 

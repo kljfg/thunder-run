@@ -1,0 +1,8 @@
+{
+  "name": "@tr/platform",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "平台适配层接口（PlatformAdapter v1，DOM 类型泄漏待 S3 泛化为 v2）。仅接口与类型，无实现。",
+  "exports": { "./*": "./dist/*" }
+}

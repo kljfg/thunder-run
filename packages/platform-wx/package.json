@@ -1,0 +1,8 @@
+{
+  "name": "@tr/platform-wx",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "占位壳（M6/S3 落地）：微信小游戏实现（canvas/storage/frame/手势/网络/登录/分享），依赖接口 v2。",
+  "exports": { "./*": "./dist/*" }
+}

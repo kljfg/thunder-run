@@ -3,7 +3,7 @@
  * 只把 sim 的实体数组映射到预建的 Mesh 槽位上，不做任何玩法判定。
  */
 import * as THREE from 'three';
-import type { CloudEntity, ObstacleEntity, PickupEntity } from '../core/sim/trackGen.js';
+import type { CloudEntity, ObstacleEntity, PickupEntity } from '@tr/core/sim/trackGen.js';
 
 /** 障碍配色（docs/05 §2：敌对品红/警示黄，可交互蓝青） */
 const OBS_COLOR: Record<string, number> = { low: 0xd9a24a, high: 0x7fd1ff, full: 0xff5fa2, vehicle: 0x4a6fd9, hazard: 0xb48cff, moving: 0xff5fa2 };

@@ -1,5 +1,10 @@
-# 编译产物：由「编译代码.bat」重新生成，不入库
+# 编译产物：tsc -b（packages/*、apps/* 下的 dist/）与 Vite 构建，不入库
 dist/
+/apps/*/build/
+*.tsbuildinfo
+
+# npm workspaces 依赖（克隆后 npm install 恢复）
+node_modules/
 
 # Python 本地服务器缓存
 __pycache__/
@@ -13,5 +18,6 @@ Desktop.ini
 .DS_Store
 *.log
 
-# 注意：vendor/（three.js）与 tools/vendor/（TypeScript 编译器）故意纳入版本库。
-# 原因：本机没有 npm，克隆下来必须能离线编译与运行（见 README「本机环境说明」）。
+# 注意：vendor/（three.js r160）与 tools/vendor/（TypeScript 5.5.4）仍故意纳入版本库。
+# M5 起运行时/编译已切到 npm 依赖（three@0.160.1、typescript@5.5.4），vendor 保留作
+# 回滚保险与无网络机器的离线兜底（node tools/vendor/typescript/lib/tsc.js -b 仍可用）。

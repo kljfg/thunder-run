@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "build",
+    "emitDeclarationOnly": true,
+    "types": []
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/core" },
+    { "path": "../../packages/platform" },
+    { "path": "../../packages/platform-web" },
+    { "path": "../../packages/render" }
+  ]
+}

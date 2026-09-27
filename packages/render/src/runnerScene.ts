@@ -6,10 +6,10 @@
  * 铁律：只读 sim 状态，不反写玩法数据（单向数据流）。
  */
 import * as THREE from 'three';
-import { STEP_DT } from '../core/sim/simTypes.js';
-import type { RunnerSim } from '../core/sim/runnerSim.js';
-import type { GameContent } from '../core/config/configTypes.js';
-import type { PlatformAdapter } from '../platform/platformAdapter.js';
+import { STEP_DT } from '@tr/core/sim/simTypes.js';
+import type { RunnerSim } from '@tr/core/sim/runnerSim.js';
+import type { GameContent } from '@tr/core/config/configTypes.js';
+import type { PlatformAdapter } from '@tr/platform/platformAdapter.js';
 import { createAvatar } from './avatarRig.js';
 import { createCoinField } from './coinField.js';
 import { createCloudLayer, createObstacleLayer, createPickupLayer } from './entityLayers.js';

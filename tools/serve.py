@@ -1,8 +1,9 @@
 """
-雷霆酷跑 · 本地开发服务器
+雷霆酷跑 · 本地静态服务器（离线兜底；日常开发首选 npm run dev 起 Vite）
 为什么不用裸的 python -m http.server：Windows 注册表会把 .js 识别成 text/plain，
 浏览器对 ES Module 强制 MIME 检查会拒绝加载。这里显式注册正确的 MIME 类型。
-用法：python tools/serve.py  （或双击 启动本地测试.bat）
+用法：先 npm run build:web（产物在 apps/web/dist，含拷贝的 config/*.json），
+     再 python tools/serve.py
 """
 import http.server
 import mimetypes
@@ -12,7 +13,8 @@ import threading
 import webbrowser
 
 PORT = 8767
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Vite 构建产物目录（自包含：JS/CSS 打包 + config/*.json 由 publicDir 拷入）
+ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'apps', 'web', 'dist')
 
 mimetypes.add_type('text/javascript', '.js')
 mimetypes.add_type('text/javascript', '.mjs')

@@ -1,12 +1,12 @@
 /**
  * 配置校验命令行工具（Node 运行，对应 docs/09 T0.4 交付物）
  * 用法：node tools/validate-config.mjs [配置目录]
- * 复用 core 的同一份校验器（编译产物 dist/core/**），保证「CI 校验」与「运行时校验」逻辑一致。
+ * 复用 core 的同一份校验器（编译产物 packages/core/dist/**），保证「CI 校验」与「运行时校验」逻辑一致。
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateFile, validateRefs } from '../dist/core/config/configValidator.js';
+import { validateFile, validateRefs } from '../packages/core/dist/config/configValidator.js';
 
 const dir = process.argv[2] ?? fileURLToPath(new URL('../config', import.meta.url));
 const files = readdirSync(dir).filter(f => f.endsWith('.json'));

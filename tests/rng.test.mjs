@@ -4,7 +4,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mulberry32, hashSeed, RunRng } from '../dist/core/rng.js';
+import { mulberry32, hashSeed, RunRng } from '../packages/core/dist/rng.js';
 
 test('mulberry32 同 seed 序列完全一致（确定性）', () => {
   const a = mulberry32(12345), b = mulberry32(12345);

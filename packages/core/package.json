@@ -1,0 +1,8 @@
+{
+  "name": "@tr/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "纯逻辑层：rng / config / effects / scene / sim。零平台依赖（禁令见 tools/check-import-rules.mjs）。",
+  "exports": { "./*": "./dist/*" }
+}

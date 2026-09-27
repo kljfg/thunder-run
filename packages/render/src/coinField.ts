@@ -3,7 +3,7 @@
  * 双 InstancedMesh（环 + 面）+ 对象池式名额选取。每帧零分配：矩阵与候选缓冲全部复用。
  */
 import * as THREE from 'three';
-import type { CoinEntity } from '../core/sim/trackGen.js';
+import type { CoinEntity } from '@tr/core/sim/trackGen.js';
 
 /** 单帧最多绘制的金币数（超出按「离角色最近优先」取舍） */
 const COIN_MAX = 260;

@@ -1,0 +1,12 @@
+{
+  "name": "@tr/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "占位壳（M7/S4 落地）：自绘 UI 框架（three.js 正交图层 + SDF 文字），替代 apps/web/src/ui/screens.ts 的 DOM 页面。",
+  "exports": { "./*": "./dist/*" },
+  "dependencies": {
+    "@tr/core": "*",
+    "@tr/platform": "*"
+  }
+}

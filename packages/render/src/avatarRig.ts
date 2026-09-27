@@ -5,9 +5,9 @@
  * 只读 sim 状态，不反写玩法数据（docs/02 §5 单向数据流）。
  */
 import * as THREE from 'three';
-import type { Loadout } from '../core/sim/character.js';
-import type { FxState } from '../core/effects/buffEngine.js';
-import type { RunnerState } from '../core/sim/simTypes.js';
+import type { Loadout } from '@tr/core/sim/character.js';
+import type { FxState } from '@tr/core/effects/buffEngine.js';
+import type { RunnerState } from '@tr/core/sim/simTypes.js';
 import { createRunnerModel } from './runnerModel.js';
 
 /** 无敌期身体往霓虹色打闪的强度与频率（docs/05 §5 角色放电的最小版本） */

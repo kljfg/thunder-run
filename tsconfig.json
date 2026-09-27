@@ -1,18 +1,12 @@
 {
-  "compilerOptions": {
-    "target": "ES2021",
-    "module": "ES2022",
-    "moduleResolution": "bundler",
-    "lib": ["ES2021", "DOM"],
-    "strict": true,
-    "noUnusedLocals": true,
-    "noFallthroughCasesInSwitch": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": { "three": ["./vendor/three-types/index.d.ts"] },
-    "rootDir": "src",
-    "outDir": "dist"
-  },
-  "include": ["src"]
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/platform" },
+    { "path": "packages/render" },
+    { "path": "packages/ui" },
+    { "path": "packages/platform-web" },
+    { "path": "packages/platform-wx" },
+    { "path": "apps/web" }
+  ]
 }

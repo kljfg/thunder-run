@@ -4,17 +4,17 @@
  *       跑酷局内：每次进入 run 场景创建全新 RunnerSim（seed 记录在案，可复现），
  *       渲染场景消费 sim 事件；死亡 1.2s 后自动进结算页。
  */
-import { loadAllConfig } from '../core/config/configLoader.js';
-import type { GameContent } from '../core/config/configTypes.js';
-import type { FileSource } from '../core/config/configLoader.js';
-import { createSceneMachine } from '../core/scene/sceneMachine.js';
-import type { SceneName } from '../core/scene/sceneMachine.js';
-import { RunnerSim } from '../core/sim/runnerSim.js';
-import { hashSeed } from '../core/rng.js';
-import { createWebPlatform } from '../platform/webPlatform.js';
-import { createRunnerScene } from '../render/runnerScene.js';
-import { renderBoot, renderLogin, renderMenu, renderResult, createRunHud, toast } from '../ui/screens.js';
-import type { RunSummary } from '../ui/screens.js';
+import { loadAllConfig } from '@tr/core/config/configLoader.js';
+import type { GameContent } from '@tr/core/config/configTypes.js';
+import type { FileSource } from '@tr/core/config/configLoader.js';
+import { createSceneMachine } from '@tr/core/scene/sceneMachine.js';
+import type { SceneName } from '@tr/core/scene/sceneMachine.js';
+import { RunnerSim } from '@tr/core/sim/runnerSim.js';
+import { hashSeed } from '@tr/core/rng.js';
+import { createWebPlatform } from '@tr/platform-web/webPlatform.js';
+import { createRunnerScene } from '@tr/render/runnerScene.js';
+import { renderBoot, renderLogin, renderMenu, renderResult, createRunHud, toast } from './ui/screens.js';
+import type { RunSummary } from './ui/screens.js';
 
 const adapter = createWebPlatform();
 let content: GameContent | null = null;
@@ -98,7 +98,8 @@ async function boot() {
       cacheGet: k => adapter.storage.get(k),
       cacheSet: (k, v) => adapter.storage.set(k, v),
     },
-    name => `./config/${name}.json`,
+    // config/*.json 由 Vite publicDir 挂载到站点根路径（重设计文档 §2：config 留在仓库根，两端共用）
+    name => `./${name}.json`,
   );
   sources = report.sources;
   if (!report.ok) {

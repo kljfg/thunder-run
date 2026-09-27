@@ -7,11 +7,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RunnerSim } from '../dist/core/sim/runnerSim.js';
-import { TrackGen } from '../dist/core/sim/trackGen.js';
-import { RunRng, hashSeed } from '../dist/core/rng.js';
-import { itemEffects } from '../dist/core/sim/character.js';
-import { isPrimitiveSupported } from '../dist/core/effects/buffEngine.js';
+import { RunnerSim } from '../packages/core/dist/sim/runnerSim.js';
+import { TrackGen } from '../packages/core/dist/sim/trackGen.js';
+import { RunRng, hashSeed } from '../packages/core/dist/rng.js';
+import { itemEffects } from '../packages/core/dist/sim/character.js';
+import { isPrimitiveSupported } from '../packages/core/dist/effects/buffEngine.js';
 
 const root = join(fileURLToPath(import.meta.url), '..', '..');
 const NAMES = ['game', 'characters', 'skills', 'items', 'obstacles', 'themes', 'events', 'economy'];

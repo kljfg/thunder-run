@@ -8,9 +8,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RunnerSim } from '../dist/core/sim/runnerSim.js';
-import { buildLoadout, playableCharacters, itemEffects } from '../dist/core/sim/character.js';
-import { hashSeed } from '../dist/core/rng.js';
+import { RunnerSim } from '../packages/core/dist/sim/runnerSim.js';
+import { buildLoadout, playableCharacters, itemEffects } from '../packages/core/dist/sim/character.js';
+import { hashSeed } from '../packages/core/dist/rng.js';
 
 const root = join(fileURLToPath(import.meta.url), '..', '..');
 const NAMES = ['game', 'characters', 'skills', 'items', 'obstacles', 'themes', 'events', 'economy'];

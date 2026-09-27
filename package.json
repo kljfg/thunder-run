@@ -1,14 +1,26 @@
 {
-  "name": "thunder-run-web",
+  "name": "thunder-run",
   "version": "0.1.0",
   "private": true,
-  "description": "雷霆酷跑 M0 工程骨架（网页版）。构建/测试入口见 README.md 与三个 .bat 脚本。",
+  "description": "雷霆酷跑 monorepo（npm workspaces）。构建/测试入口见 README.md；旧 .bat 已改为调 npm scripts。",
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -b",
+    "watch": "tsc -b --watch",
     "test": "node --test tests/*.test.mjs",
     "validate-config": "node tools/validate-config.mjs",
     "check-imports": "node tools/check-import-rules.mjs",
-    "check": "node tools/check.mjs"
+    "check": "node tools/check.mjs",
+    "dev": "npm run build && npm run dev --workspace @tr/web",
+    "build:web": "npm run build && npm run build --workspace @tr/web",
+    "preview:web": "npm run preview --workspace @tr/web"
+  },
+  "devDependencies": {
+    "typescript": "5.5.4",
+    "vite": "^7.3.6"
   }
 }

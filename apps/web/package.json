@@ -1,0 +1,18 @@
+{
+  "name": "@tr/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "开发调试壳（重设计文档 §3.4）：Vite dev + ?debug 探针。config/*.json 经 publicDir 提供。",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tr/core": "*",
+    "@tr/platform": "*",
+    "@tr/platform-web": "*",
+    "@tr/render": "*"
+  }
+}

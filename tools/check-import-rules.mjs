@@ -1,47 +1,90 @@
 /**
- * 架构禁令检查（M0 用轻量脚本代替 ESLint 自定义规则，对应 docs/02 §9 / README 约束 C2、C6、docs/10 §4）
+ * 架构禁令检查（对应 docs/02 §9 / README 约束 C2、C6、docs/10 §4；重设计文档 §2 升级适配 monorepo）
  * 规则：
- *   R1 src/core/**  ：禁止 import 'three'、禁止 window/document/localStorage/fetch/wx.、禁止 Math.random（随机必须走 RunRng）
- *   R2 src/render/**：禁止 window/document/localStorage/wx.（three 允许）
- *   R3 src/**       ：单文件不超过 300 行（docs/10 §4「一个文件一个概念」）
+ *   R1 packages/core/**   ：禁止 import 'three'；禁止 window/document/localStorage/fetch/wx.；
+ *                           禁止 Math.random（随机必须走 RunRng）
+ *   R2 packages/render/** ：禁止 window/document/localStorage/fetch/wx.（three 允许）
+ *   R3 packages/(render|ui|game)/** ：禁止 import @tr/platform-web / @tr/platform-wx
+ *                           （只有 platform-* 与 apps/* 可触平台实现；@tr/ui、@tr/game 包落地前规则先占位）
+ *   R4 所有包源文件       ：单文件不超过 300 行（docs/10 §4「一个文件一个概念」）
  * 用法：node tools/check-import-rules.mjs
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 /** docs/10 §4 的文件行数上限 */
 const MAX_FILE_LINES = 300;
 
-const RULES = [
-  { glob: 'src/core',   forbid: [[/from ['"]three['"]/g, 'core 禁止依赖 three'], [/\bwindow\./g, 'core 禁止 window'], [/\bdocument\./g, 'core 禁止 document'], [/\blocalStorage\b/g, 'core 禁止 localStorage'], [/\bfetch\(/g, 'core 禁止直接 fetch'], [/\bwx\./g, 'core 禁止 wx API'], [/\bMath\.random\b/g, 'core 禁止 Math.random（用 RunRng）']] },
-  { glob: 'src/render', forbid: [[/\bwindow\./g, 'render 禁止 window'], [/\bdocument\./g, 'render 禁止 document'], [/\blocalStorage\b/g, 'render 禁止 localStorage'], [/\bwx\./g, 'render 禁止 wx API']] },
+/** DOM/BOM 全局访问（重设计文档 §2：平台 API 只能经 platform-* 包进入） */
+const DOM_GLOBALS = [
+  [/\bwindow\./g, '禁止直接使用 window'],
+  [/\bdocument\./g, '禁止直接使用 document'],
+  [/\blocalStorage\b/g, '禁止直接使用 localStorage'],
+  [/\bfetch\(/g, '禁止直接调用 fetch'],
+  [/\bwx\./g, '禁止直接使用 wx API'],
 ];
 
-function* walk(dir) {
+/** 只允许 platform-* 包与 apps/* import 的平台实现包 */
+const PLATFORM_IMPLS = [
+  [/from ['"]@tr\/platform-(web|wx)(\/|['"])/g, '禁止 import 平台实现包 @tr/platform-web / @tr/platform-wx（只允许 apps/* 与 platform 装配边界使用）'],
+];
+
+const NO_PLATFORM = ['@tr/render', '@tr/ui', '@tr/game']; // 包目录名：render / ui / game
+
+function* walkTs(dir) {
   for (const name of readdirSync(dir)) {
+    if (name === 'node_modules' || name === 'dist' || name === 'build') continue;
     const p = join(dir, name);
-    if (statSync(p).isDirectory()) yield* walk(p);
+    if (statSync(p).isDirectory()) yield* walkTs(p);
     else if (p.endsWith('.ts')) yield p;
   }
 }
 
+/** 收集 <root> 下存在的源码目录（src/ 或包根），不存在则跳过（如 @tr/game 尚未建包） */
+function sourcesUnder(base) {
+  if (!existsSync(base)) return [];
+  const out = [];
+  for (const name of readdirSync(base)) {
+    const pkgDir = join(base, name);
+    if (!statSync(pkgDir).isDirectory()) continue;
+    for (const cand of [join(pkgDir, 'src'), pkgDir]) {
+      if (existsSync(cand) && statSync(cand).isDirectory()) {
+        out.push(...walkTs(cand));
+        break;
+      }
+    }
+  }
+  return out;
+}
+
 const violations = [];
-for (const rawPath of walk('src')) {
-  const file = rawPath.split('\\').join('/'); // Windows 下 join 产生反斜杠，统一后再匹配规则前缀
+const files = [
+  ...sourcesUnder('packages'),
+  ...sourcesUnder('apps'),
+].map(p => p.split('\\').join('/')); // Windows 反斜杠统一为 / 再匹配
+
+for (const file of files) {
   const lines = readFileSync(file, 'utf8').split('\n');
   if (lines[lines.length - 1] === '') lines.pop(); // 文件末尾换行不计为一行
   if (lines.length > MAX_FILE_LINES) {
     violations.push(`${file}:1  文件 ${lines.length} 行，超过 docs/10 §4 的 ${MAX_FILE_LINES} 行上限（按概念拆模块）`);
   }
-  const rule = RULES.find(r => file.startsWith(r.glob));
-  if (!rule) continue;
+  const inCore = file.startsWith('packages/core/');
+  const inRender = file.startsWith('packages/render/');
+  const inPlatformFree = NO_PLATFORM.some(p => file.startsWith('packages/' + p.slice(4) + '/'));
+
   lines.forEach((line, i) => {
-    // 跳过注释行（行内说明允许出现关键词）
-    if (/^\s*(\/\/|\*|\/\*)/.test(line)) return;
-    for (const [re, msg] of rule.forbid) {
+    if (/^\s*(\/\/|\*|\/\*)/.test(line)) return; // 行内注释允许出现关键词
+    const hit = (re, msg) => {
       re.lastIndex = 0;
       if (re.test(line)) violations.push(`${file}:${i + 1}  ${msg}\n      > ${line.trim()}`);
+    };
+    if (inCore) {
+      hit(/from ['"]three['"]/g, 'core 禁止依赖 three');
+      hit(/\bMath\.random\b/g, 'core 禁止 Math.random（用 RunRng）');
     }
+    if (inCore || inRender || inPlatformFree) for (const [re, msg] of DOM_GLOBALS) hit(re, msg);
+    if (inPlatformFree) for (const [re, msg] of PLATFORM_IMPLS) hit(re, msg);
   });
 }
 
@@ -50,4 +93,4 @@ if (violations.length) {
   violations.forEach(v => console.error('  ✗', v));
   process.exit(1);
 }
-console.log(`架构禁令检查通过（core/render 无越界引用，所有源文件 ≤${MAX_FILE_LINES} 行）`);
+console.log(`架构禁令检查通过（${files.length} 个源文件：无平台越界引用，全部 ≤${MAX_FILE_LINES} 行）`);

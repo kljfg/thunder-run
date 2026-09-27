@@ -3,7 +3,7 @@
  * 挂到 globalThis.__trRun：state 给逐帧数值快照，probe 给只读前瞻（近处障碍/道具箱/各车道金币）。
  * 只在 URL 带 ?debug 时安装，正式运行不产生任何全局变量。
  */
-import type { RunnerSim } from '../core/sim/runnerSim.js';
+import type { RunnerSim } from '@tr/core/sim/runnerSim.js';
 import type { createBurstPool } from './vfxBurst.js';
 
 /** 前瞻采样窗口（米）：金币按车道统计、障碍/道具箱按最近若干个 */

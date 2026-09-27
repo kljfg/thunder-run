@@ -2,7 +2,7 @@
  * 网页端平台适配实现（对应 docs/02 §4 PlatformAdapter 的 web 实现）
  * 这是全项目唯一允许直接接触 DOM/BOM API 的输入/存储出口（UI 层除外）。
  */
-import type { CanvasHost, Gesture, PlatformAdapter } from './platformAdapter.js';
+import type { CanvasHost, Gesture, PlatformAdapter } from '@tr/platform/platformAdapter.js';
 
 /** 判定为滑动的最小位移（CSS 像素）；双击窗口参数来自 game.json，先给保守默认 */
 const SWIPE_MIN_PX = 24;
