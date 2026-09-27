@@ -71,7 +71,7 @@ thunder-run/
 1. **没有安装 Node.js/npm**：借用 Qoder 自带 Electron（`ELECTRON_RUN_AS_NODE=1` 即变 Node v24），TypeScript 编译器与 three 类型已离线内置在 `vendor/`、`tools/vendor/`。日后装好正式 Node+pnpm 可按 docs/02 §3 拆 monorepo，代码结构不变。
 2. **暂用自研检查脚本代替 ESLint**（`tools/check-import-rules.mjs` 实现 C2/C6 禁令）；正式 lint 规则待工具链补齐后迁移。
 3. 配置校验是 schema 的运行时轻量版；CI 全量 ajv 校验在 T2.5 接入。
-4. **本仓库不是 git 仓库**：docs/10 §7 的 PR 自检流程暂无法执行，改动靠 `运行测试.bat` 全绿 + 人工复核。
+4. ~~本仓库不是 git 仓库~~ **已还（2026-09-25）**：两个目录各自 `git init`（默认分支 `main`）并打了基线提交；提交信息按 docs/02 §9 的 `feat|fix|content|art|perf|docs(scope): 摘要` 格式。`dist/` 已 gitignore，`vendor/` 与 `tools/vendor/` 故意入库以保证克隆后可离线编译。
 5. **原语实现集中在 `buffEngine.ts` 一张表**，未按 docs/10 §3.1 拆成 `effects/primitives/<name>.ts` 一原语一文件——单条原语只有 1-3 行合并规则，拆 20 个文件反而难改。
 6. ~~`runnerSim.ts` / `runnerScene.ts` 超过 300 行~~ **已还（2026-09-25）**：按概念拆成 sim 7 模块 + render 7 模块，并在 `tools/check-import-rules.mjs` 加了 R3 规则，任何源文件超 300 行 `运行测试.bat` 直接失败。
 
