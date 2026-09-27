@@ -11,7 +11,13 @@ const COIN_LOOKAHEAD_M = 60, OBS_LOOKAHEAD_M = 40, PICKUP_LOOKAHEAD_M = 200;
 
 type BurstPool = ReturnType<typeof createBurstPool>;
 
-export function installRunProbe(sim: RunnerSim, camera: () => { x: number; y: number }, bursts: BurstPool) {
+export function installRunProbe(
+  sim: RunnerSim,
+  camera: () => { x: number; y: number },
+  bursts: BurstPool,
+  /** 渲染统计（drawcall / 三角面），docs/02 §8 性能预算与 docs/08 §5 门禁取证用 */
+  renderInfo: () => { calls: number; triangles: number } = () => ({ calls: -1, triangles: -1 }),
+) {
   const r2 = (v: number) => +v.toFixed(2);
   const fxOf = () => {
     const f = sim.fx;
@@ -27,7 +33,7 @@ export function installRunProbe(sim: RunnerSim, camera: () => { x: number; y: nu
       const s = sim.state;
       return {
         ...sim.summary(), sliding: s.sliding, y: r2(s.y), fx: fxOf(),
-        energy: r2(s.energy), cd: r2(s.skillCd), gliding: s.gliding, cam: camera(),
+        energy: r2(s.energy), cd: r2(s.skillCd), gliding: s.gliding, cam: camera(), draw: renderInfo(),
         burstFired: bursts.fired,
         obstacles: sim.obstacles.length, coins: sim.coinsArr.length,
         pickups: sim.pickupsArr.length, clouds: sim.cloudsArr.length,

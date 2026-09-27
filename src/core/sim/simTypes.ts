@@ -40,6 +40,7 @@ export interface RunnerState {
 export const EMPTY_LOADOUT: Loadout = {
   charId: '', name: '跑者', tagline: '', tint: '#7FD1FF', rarity: 'R',
   skill: null, passive: [], talentLabel: '', talentDesc: '',
+  skinId: '', bodyTint: '#F2F4F8', emissive: '#7FD1FF', modelScale: 1,
 };
 
 /** 新建一局的状态初值 */

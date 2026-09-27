@@ -34,8 +34,8 @@ const FOV_GROUND = 55, FOV_AIR = 60, FOV_LERP = 0.06;
 const SHAKE_DECAY = 1 / 60, SHAKE_AMP = 0.24;
 /** 死亡后停留多久进结算页、HUD 刷新间隔（秒） */
 const END_DELAY_S = 1.2, HUD_INTERVAL_S = 0.15;
-/** 爆点触发点：身体前方略低，穿云时用白色 */
-const BURST_OFFSET = { y: 0.1, z: -0.62 }, CLOUD_BURST_COLOR = 0xdfe9f5;
+/** 爆点的画面深度（角色身体前方 0.62m，胸口高度由 chestY 提供）；穿云用白色 */
+const BURST_Z = -0.62, CLOUD_BURST_COLOR = 0xdfe9f5;
 /** 雾视距：障碍在约 3 秒外可见（地铁酷跑式远望） */
 const FOG_NEAR = 22, FOG_FAR = 120;
 
@@ -67,14 +67,15 @@ export function createRunnerScene(
   scene.add(keyLight);
 
   const track = createTrackVisuals(scene, laneWidth, { baseColor: sky.baseColor, flashColor: sky.flashColor, tint });
-  const avatar = createAvatar(scene, laneWidth, { tint: sim.loadout.tint, flashColor: sky.flashColor });
+  const avatar = createAvatar(scene, laneWidth, sim.loadout);
   const coinField = createCoinField(scene, laneWidth);
   const obstacleLayer = createObstacleLayer(scene, laneWidth);
   const pickupLayer = createPickupLayer(scene, laneWidth);
   const cloudLayer = createCloudLayer(scene);
   const bursts = createBurstPool(scene);
-  const playerPos = avatar.mesh.position;
-  const fireAtPlayer = () => bursts.fireAt(playerPos.x, playerPos.y + BURST_OFFSET.y, BURST_OFFSET.z);
+  /** 胸口位置缓存：爆点与吸入动画对齐到身体，而不是脚底原点 */
+  let chestX = 0, chestY = avatar.chestY;
+  const fireAtPlayer = () => bursts.fireAt(chestX, chestY, BURST_Z);
 
   // ---------- 输入 → sim ----------
   const offGesture = adapter.onGesture(g => {
@@ -116,10 +117,11 @@ export function createRunnerScene(
     const dist = s.prevDistance + (s.distance - s.prevDistance) * alpha;
 
     avatar.update(s, fx);
-    coinField.update({ coins: sim.coinsArr, t: s.t, dist, magnetOn: fx.magnetT > 0, playerX: playerPos.x, playerY: playerPos.y });
+    chestX = s.x; chestY = s.y + avatar.chestY;
+    coinField.update({ coins: sim.coinsArr, t: s.t, dist, magnetOn: fx.magnetT > 0, playerX: chestX, playerY: chestY });
     obstacleLayer.update(sim.obstacles, dist, s.t);
     pickupLayer.update(sim.pickupsArr, dist, s.t);
-    cloudLayer.update(sim.cloudsArr, dist, s.t, s.prevDistance, playerPos.x, fx.flyT > 0 || s.gliding,
+    cloudLayer.update(sim.cloudsArr, dist, s.t, s.prevDistance, chestX, fx.flyT > 0 || s.gliding,
       (x, y, z) => bursts.fireAt(x, y, z, CLOUD_BURST_COLOR));
     track.update(dist);
 
@@ -183,7 +185,8 @@ export function createRunnerScene(
   }
   raf = adapter.requestFrame(tick);
 
-  if (cb.debug) installRunProbe(sim, () => ({ x: +camX.toFixed(2), y: +camY.toFixed(2) }), bursts);
+  if (cb.debug) installRunProbe(sim, () => ({ x: +camX.toFixed(2), y: +camY.toFixed(2) }), bursts,
+    () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles }));
 
   function dispose() {
     running = false;

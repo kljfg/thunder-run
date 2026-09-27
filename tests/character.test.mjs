@@ -160,6 +160,22 @@ test('被动天赋整局常驻：跑满 60 秒仍在身上，HUD 不会显示 35
   assert.equal(sim.buffs.left('slideExtend'), Number.POSITIVE_INFINITY, '被动应登记为永久槽位');
 });
 
+test('渲染装配同样来自配置：体色/发光色/体量读皮肤 materialOverrides 与 model.scale', () => {
+  const volt = buildLoadout(content, 'char_volt');
+  assert.equal(volt.skinId, 'skin_volt_default');
+  assert.equal(volt.bodyTint, '#F2F4F8');
+  assert.equal(volt.emissive, '#FFD84D');
+  assert.equal(volt.modelScale, 1.0);
+  assert.equal(buildLoadout(content, 'char_bolt').modelScale, 1.05, '警长应比小电高 5%');
+
+  const edited = load();
+  edited.characters.items.find(c => c.id === 'skin_volt_default').materialOverrides.emissive = '#00FF88';
+  edited.characters.items.find(c => c.id === 'char_volt').model.scale = 1.4;
+  const l = buildLoadout(edited, 'char_volt');
+  assert.equal(l.emissive, '#00FF88', '改皮肤发光色即换描边/雷核颜色，不需要改代码');
+  assert.equal(l.modelScale, 1.4);
+});
+
 test('找不到角色 id 时回退到第一个可玩角色（不抛错、不白屏）', () => {
   const sim = new RunnerSim(content, SIM_SEED(), 'char_nobody');
   assert.equal(sim.loadout.charId, playableCharacters(content)[0].id);

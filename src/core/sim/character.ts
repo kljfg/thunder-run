@@ -42,6 +42,11 @@ export interface Loadout {
   /** 被动天赋文案（菜单展示） */
   talentLabel: string;
   talentDesc: string;
+  /** 渲染装配（docs/05 §3、§4.4）：默认皮肤的配色与模型缩放，改 JSON 即换外观 */
+  skinId: string;
+  bodyTint: string;
+  emissive: string;
+  modelScale: number;
 }
 
 /** 可出战角色 = char_ 前缀且 status=live */
@@ -98,8 +103,19 @@ export function buildLoadout(content: GameContent, charId: string): Loadout {
     charId: c?.id ?? '', name: text(c?.name, '跑者'), tagline: text(c?.tagline),
     tint: text(c?.tint, '#7FD1FF'), rarity: String(c?.rarity ?? 'R'),
     skill: null, passive: [], talentLabel: '', talentDesc: '',
+    skinId: '', bodyTint: text(c?.tint, '#7FD1FF'), emissive: text(c?.tint, '#7FD1FF'), modelScale: 1,
   };
   if (!c) return base;
+
+  // 渲染装配：默认皮肤（skins[0]）的 materialOverrides 决定体色与发光色，model.scale 决定体量
+  const model = (c['model'] ?? {}) as Record<string, unknown>;
+  if (typeof model.scale === 'number' && model.scale > 0) base.modelScale = model.scale;
+  const skinId = (((c.skins as string[] | undefined) ?? [])[0]) ?? '';
+  const skin = (content.characters.items ?? []).find(x => x.id === skinId);
+  const overrides = (skin?.materialOverrides ?? {}) as Record<string, unknown>;
+  base.skinId = skinId;
+  base.bodyTint = text(overrides.bodyTint, base.tint);
+  base.emissive = text(overrides.emissive, base.tint);
 
   const skillEntry = findEntry(content, c.skillRef);
   if (skillEntry && skillEntry['kind'] === 'active') {
