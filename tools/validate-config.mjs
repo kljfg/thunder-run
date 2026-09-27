@@ -5,9 +5,10 @@
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { validateFile, validateRefs } from '../dist/core/config/configValidator.js';
 
-const dir = process.argv[2] ?? new URL('../config', import.meta.url).pathname.replace(/^\/(\w:)/, '$1');
+const dir = process.argv[2] ?? fileURLToPath(new URL('../config', import.meta.url));
 const files = readdirSync(dir).filter(f => f.endsWith('.json'));
 const content = {};
 let errors = [];
