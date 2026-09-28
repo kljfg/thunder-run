@@ -56,3 +56,4 @@ export type {
 } from './input.js';
 export { GESTURE_DEFAULTS, createGestureClassifier } from './gestureClassifier.js';
 export type { CloudBridge, ShareOptions, WxExtras, WxIdentity } from './extras.js';
+export type { AudioAsset, AudioBackend, AudioChannel, AudioPlayOptions, AudioVoice } from './audio.js';
