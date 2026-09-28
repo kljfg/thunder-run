@@ -9,8 +9,8 @@ import type { FileSource } from '@tr/core/config/configLoader.js';
 import type { RunnerSim } from '@tr/core/sim/runnerSim.js';
 import type { RunCallbacks } from '@tr/render/runnerScene.js';
 
-/** 结算摘要（与 core RunnerSim.summary() 同源） */
-export type RunSummary = ReturnType<RunnerSim['summary']>;
+/** 结算摘要（与 core RunnerSim.summary() 同源）；charName 由 mainFlow 查 characters 配置补入，供结果页显示 */
+export type RunSummary = ReturnType<RunnerSim['summary']> & { charName?: string };
 /** HUD 快照（与 render RunCallbacks.onHud 参数同源，避免双份定义漂移） */
 export type HudData = Parameters<RunCallbacks['onHud']>[0];
 

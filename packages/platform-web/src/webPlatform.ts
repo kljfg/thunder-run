@@ -55,6 +55,8 @@ export function createWebPlatform(options: WebPlatformOptions): PlatformAdapter 
         mainEl.style.width = '100%';
         mainEl.style.height = '100%';
         mainEl.style.display = 'block';
+        // 触屏：画布独占手势（滑动只喂游戏，不滚动页面/触发下拉刷新）；仅作用于 canvas，登录页按钮与输入框不受影响
+        mainEl.style.touchAction = 'none';
       }
       // 页面流转会让 DOM screens replaceChildren 掉画布；重新进 run 时挂回（v1 同语义）
       if (mainEl.parentElement !== mount) mount.replaceChildren(mainEl);
@@ -74,6 +76,7 @@ export function createWebPlatform(options: WebPlatformOptions): PlatformAdapter 
   };
 
   // ---------- §2 输入：window 级事件，随时可订阅（D5，v1「先建画布否则 throw」废止） ----------
+  // v2 语义：keydown 过滤 e.repeat（按住不连发 down，避免落地自动连跳 / E 连放技能）；keyup 不滤，按住→松开必达。
   const classifier = createGestureClassifier();
   const inputSubs = new Set<(e: InputEvent) => void>();
   const emit = (e: InputEvent | null) => {
@@ -86,7 +89,11 @@ export function createWebPlatform(options: WebPlatformOptions): PlatformAdapter 
     emit(classifier.push({ phase: 'up', x: e.clientX, y: e.clientY, timeMs: performance.now() }));
   // 输入框聚焦时不拦截按键（S5 前登录页表单可正常打字；S5 后随 screens.ts 退役）
   const inFormField = (e: KeyboardEvent) => (e.target as HTMLElement | null)?.tagName === 'INPUT';
-  const onKeyDown = (e: KeyboardEvent) => { if (!inFormField(e)) emit({ type: 'key', code: e.code, phase: 'down' }); };
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (inFormField(e)) return; // INPUT 聚焦绕过保留（登录页可正常打字）
+    if (e.repeat) return;       // v2：系统按键 repeat 不派发 down（首次按下照常）
+    emit({ type: 'key', code: e.code, phase: 'down' });
+  };
   const onKeyUp = (e: KeyboardEvent) => { if (!inFormField(e)) emit({ type: 'key', code: e.code, phase: 'up' }); };
   window.addEventListener('pointerdown', onPointerDown);
   window.addEventListener('pointerup', onPointerUp);

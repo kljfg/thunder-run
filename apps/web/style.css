@@ -19,8 +19,9 @@ body {
   font: 15px/1.65 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none; /* 触屏下拉刷新/滚动链断开；页面滚动本身不受影响 */
 }
-#screen { height: 100dvh; display: grid; place-items: center; padding: 24px; }
+#screen { height: 100dvh; display: grid; place-items: center; place-items: safe center; padding: 24px; overflow-y: auto; }
 
 /* ---------- 启动页 ---------- */
 .boot { text-align: center; }
@@ -51,8 +52,13 @@ body {
 .menu { width: min(720px, 94vw); }
 .menu-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .menu-user { color: var(--muted); font-size: 12px; }
-.char-row { display: flex; gap: 12px; overflow-x: auto; padding: 14px 2px; }
+/* 宽屏：横排轮播，保留横向滚动并给出可见滚动条提示（第 4/5 张卡可滚动到达） */
+.char-row { display: flex; gap: 12px; overflow-x: auto; padding: 14px 2px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; overscroll-behavior-x: contain; }
+.char-row::-webkit-scrollbar { height: 6px; }
+.char-row::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
+.char-row::-webkit-scrollbar-track { background: transparent; }
 .char-card { flex: 0 0 190px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; transition: border-color .18s, transform .18s; }
+.char-card { min-width: 0; }
 .char-card:hover { transform: translateY(-2px); }
 .char-card.picked { border-color: var(--neon); box-shadow: 0 0 0 1px var(--neon), 0 8px 26px rgba(127, 209, 255, .18); }
 .char-chip { width: 34px; height: 34px; border-radius: 10px; box-shadow: 0 0 18px rgba(255, 255, 255, .12); }
@@ -62,6 +68,12 @@ body {
 .char-meta { color: var(--muted); font-size: 11px; }
 .char-skill { color: var(--text); font-size: 11px; line-height: 1.5; opacity: .82; font-weight: 400; }
 .cfg-src { color: var(--muted); font-size: 11px; margin-top: 16px; word-break: break-all; }
+
+/* 窄屏（≤940px）：横排 5 张 190px 卡必然裁掉第 4/5 张——改 3 列两行网格，5 张全部可见；
+   DOM 与点卡换角色交互不变，只有布局变化（843px→3+2 行；~600px→同样 3+2，必要时纵向滚动） */
+@media (max-width: 940px) {
+  .char-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; overflow-x: visible; }
+}
 
 /* ---------- demo HUD 与 toast ---------- */
 .hud { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); left: 14px; background: rgba(20, 28, 51, .8); border: 1px solid var(--line); padding: 6px 12px; border-radius: 99px; font-size: 12px; }
