@@ -10,6 +10,8 @@
  */
 import type { RunRng } from '../rng.js';
 import type { GameContent, NamedEntry } from '../config/configTypes.js';
+import { BLOCKING_CLASSES, normalizeSwing, type SwingSpec } from './trackDefs.js';
+import { SkyGate } from './trackSky.js';
 
 export interface ObstacleEntity {
   obsRef: string;
@@ -17,7 +19,7 @@ export interface ObstacleEntity {
   w: number; h: number; d: number;
   lane: number;
   worldZ: number;
-  swing?: { ampM: number; periodS: number };
+  swing?: SwingSpec;
   done?: boolean;      // 已命中（避免同一障碍重复判负）
   passed?: boolean;    // 已掠过角色面（近失判定一次性）
 }
@@ -56,17 +58,15 @@ export class TrackGen {
   private readonly blockWeights: Record<number, number>; // 封堵 1/2 条道的权重       // 同段两箱最小间隔
   private nextPickupSeg = 200; // 首段从 200m 开始（新手段净空）
   private chainSeq = 0; // 链编号（整链撤回用）
-  private readonly skyZones: Array<{ from: number; to: number }> = [];
+  /** 上一个抽中的模板 id：pickPattern 用于避免连续同模板 */
+  private lastPatternId = '';
+  private readonly sky = new SkyGate();
 
   /** 登记空中段：ensure() 遇到区间内不再生成任何地面内容（飞行器调用） */
-  openSky(from: number, to: number) { this.skyZones.push({ from, to }); }
+  openSky(from: number, to: number) { this.sky.open(from, to, this.genZ); }
 
   /** 落地收尾：把覆盖 z 之前的空中段提前截断，并把生成线回拨，让障碍/金币/道具尽快恢复 */
-  closeSky(z: number) {
-    for (const s of this.skyZones) if (z > s.from) s.to = Math.min(s.to, z);
-    this.genZ = Math.min(this.genZ, z + 5);
-  }
-  private inSky(z: number): boolean { return this.skyZones.some(s => z >= s.from - 4 && z <= s.to); }
+  closeSky(z: number) { this.genZ = this.sky.close(z, this.genZ); }
 
   constructor(content: GameContent, private rng: RunRng) {
     const ob = content.obstacles;
@@ -78,7 +78,9 @@ export class TrackGen {
     this.patterns = ob.patterns as unknown as Pattern[];
     this.curve = ob.difficultyCurve;
     const coins = (content.game.params.coins ?? {}) as Record<string, unknown>;
-    this.chainBuckets = (coins.chainBuckets ?? [{ min: 5, max: 10, weight: 75 }]) as typeof this.chainBuckets;
+    const buckets = (coins.chainBuckets ?? [{ min: 5, max: 10, weight: 75 }]) as typeof this.chainBuckets;
+    // 防御：配置给出空数组时回落到默认桶，避免向空池 weighted 取到 undefined 后读 min 崩溃
+    this.chainBuckets = buckets.length ? buckets : [{ min: 5, max: 10, weight: 75 }];
     this.coinSpacing = (coins.spacingM as number) ?? 1.5;
     const lw = (coins.laneGroupWeights ?? { 1: 70, 2: 25, 3: 5 }) as Record<string, number>;
     this.laneWeights = { 1: lw['1'] ?? 70, 2: lw['2'] ?? 25, 3: lw['3'] ?? 5 };
@@ -122,9 +124,11 @@ export class TrackGen {
 
   /** 保证赛道铺到 distance + aheadM；新障碍/金币/道具箱追加进传入数组（sim 持有所有权） */
   ensure(distance: number, aheadM: number, obstacles: ObstacleEntity[], coins: CoinEntity[], pickups: PickupEntity[] = []) {
-    while (this.genZ < distance + aheadM) {
+    // 推进目标按未关闭空中段末端截断：飞行期间生成线不得越过段尾，保证落地回拨只落入未生成区
+    const target = this.sky.cap(distance + aheadM);
+    while (this.genZ < target) {
       // 空中段：整段跳过地面内容（金币带与云由 spawnSky 预铺）
-      if (this.inSky(this.genZ)) { this.genZ += this.segLen; continue; }
+      if (this.sky.inSky(this.genZ)) { this.genZ += this.segLen; continue; }
       const pat = this.pickPattern(this.difficulty(this.genZ));
       const patStart = obstacles.length; // 记录本轮新障碍起点（金币反向清理用）
       for (const cell of pat.cells) {
@@ -138,7 +142,7 @@ export class TrackGen {
             cls: def.class as ObstacleEntity['cls'],
             w: size[0], h: size[1], d: size[2],
             lane: cell.lane, worldZ: z,
-            swing: def.swing as ObstacleEntity['swing'] | undefined,
+            swing: normalizeSwing(def.swing),
           });
         }
       }
@@ -240,25 +244,40 @@ export class TrackGen {
   }
 
   /** 当前难度档可用模板池按权重抽一；高难度段（by ≥ laneBlock.fromDifficulty）
-   *  再按「同时封堵车道数」二次过滤：默认 1 道 80% / 2 道 20%，3 道封堵永不出现。
+   *  再按「同时封堵车道数」（仅 full/vehicle/moving）二次过滤：默认 1 道 80% / 2 道 20%，
+   *  3 道封堵永不出现；池内有 ≥2 个可选时排除上一个抽中的模板，避免连续同模板导致体感单一化。
    *  public：供测试与 M5 可解性求解器复用 */
   pickPattern(d: number): Pattern {
     let band = this.curve[0];
     for (const c of this.curve) if (c.by <= d) band = c;
     let pool = this.patterns.filter(p => p.minDifficulty <= d && (band.poolWeights[p.id] ?? 0) > 0);
+    if (!pool.length) pool = this.patterns.filter(p => p.minDifficulty <= d); // 防御：难度带池为空时退回难度可用集
+    if (!pool.length) pool = this.patterns; // 防御：配置极端时退回全量，绝不向空池抽签
+    // 避免连续同模板：先排除上一个（排除后为空则不排除，保证不死锁）
+    let candidates = pool;
+    if (candidates.length > 1 && this.lastPatternId) {
+      const fresh = candidates.filter(p => p.id !== this.lastPatternId);
+      if (fresh.length) candidates = fresh;
+    }
     if (d >= this.blockFromDiff && (this.blockWeights[1] ?? 0) + (this.blockWeights[2] ?? 0) > 0) {
       const want = this.rng.weighted([1, 2], k => this.blockWeights[k] ?? 0);
-      const fit = pool.filter(p => this.maxBlockedLanes(p) === want);
-      if (fit.length) pool = fit; // 该封堵数无可用模板时保留原池（不会死锁）
+      const fit = candidates.filter(p => this.maxBlockedLanes(p) === want);
+      if (fit.length) candidates = fit; // 该封堵数无可用模板时保留原池（不会死锁）
     }
-    return this.rng.weighted(pool, p => band.poolWeights[p.id] ?? 0);
+    if (!candidates.length) throw new Error('TrackGen.pickPattern: 模板池为空（configValidator 应已拦截）');
+    const picked = this.rng.weighted(candidates, p => band.poolWeights[p.id] ?? 0);
+    this.lastPatternId = picked.id;
+    return picked;
   }
 
-  /** 模板的"封堵度"：单段内出现障碍的车道数最大值（滑/跳可过的低高障碍也算占道） */
+  /** 模板的"封堵度"：单段内被「不可通过」障碍（full/vehicle/moving）占用的车道数最大值。
+   *  低障/高杆/电弧可跳可铲通过，不计入封路——否则 by≥3 的单道池会被单一模板垄断。 */
   maxBlockedLanes(p: Pattern): number {
     const perSeg = new Map<number, Set<number>>();
     for (const cell of p.cells) {
       if (!cell.obsRef) continue;
+      const cls = String(this.defs.get(cell.obsRef)?.class ?? '');
+      if (!BLOCKING_CLASSES.has(cls)) continue;
       if (!perSeg.has(cell.segment)) perSeg.set(cell.segment, new Set());
       perSeg.get(cell.segment)!.add(cell.lane);
     }

@@ -76,10 +76,17 @@ export class Movement {
     s.x += Math.sign(dx) * Math.min(Math.abs(dx), laneSpeed * dt);
   }
 
+  /** 飞行/滑翔期间缓冲同样递减（不执行）：避免进飞行前留下的跳/铲缓冲落地后自动触发 */
+  private decayPending() {
+    if (this.pendingJump > 0) this.pendingJump--;
+    if (this.pendingSlide > 0) this.pendingSlide--;
+  }
+
   /** 垂直：三档 —— 飞行悬停 / 滑翔降落 / 地面跳跃滑铲 */
   advanceVertical(s: RunnerState, fx: FxState, dt: number) {
     if (fx.flyT > 0) {
       this.flyWasActive = true;
+      this.decayPending();
       s.vy = 0;
       s.y += (this.fly.heightM - s.y) * Math.min(1, dt * RISE_LERP); // 平滑升至飞行高度（不高，可俯瞰地面）
       if (s.sliding) this.cancelSlide(s);
@@ -90,6 +97,7 @@ export class Movement {
       if (s.y > AIRBORNE_Y) s.gliding = true; // 燃料耗尽 → 进入滑翔降落
     }
     if (s.gliding) {
+      this.decayPending();
       s.y -= (this.fly.heightM / this.fly.glideS) * dt;              // 匀速滑翔下滑
       if (s.y <= 0) {
         s.y = 0; s.gliding = false;

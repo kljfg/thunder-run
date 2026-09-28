@@ -200,9 +200,12 @@ export class RunnerSim {
 
     this.gen.ensure(s.distance, GEN_AHEAD_M, this.obstacles, this.coinsArr, this.pickupsArr);
     this.collide();
-    collectCoins(this.collectDeps);
-    collectPickups(this.collectDeps);
+    if (s.alive) {
+      collectCoins(this.collectDeps);
+      collectPickups(this.collectDeps);
+    }
     this.cull();
+    if (!s.alive) return; // 死亡帧不结算拾取与计分（cull 仍执行，保持实体回收）
 
     s.score = Math.floor(s.distance) * (this.SC.perMeter ?? 10)
       + s.coins * (this.SC.perCoin ?? 5)
@@ -216,15 +219,12 @@ export class RunnerSim {
     for (const o of this.obstacles) {
       if (o.done) continue;
       const z = relZ(o, s.distance);
-      if (!inDepthWindow(o, z)) {
-        // 未在本层深度范围：仅检查「掠过面」事件用于近失计分
-        if (z > 0 && !o.passed) {
-          o.passed = true;
-          if (isNearMiss(o, s, this.laneWidth)) { s.nearMiss++; this.events.push({ type: 'nearMiss' }); }
-        }
-        continue;
+      if (!inDepthWindow(o, z)) continue;
+      if (!o.passed) {
+        // 首次进入深度窗口的那一帧判一次擦身（先于命中判定；命中时 lateralGap<=0 自然不计）
+        o.passed = true;
+        if (isNearMiss(o, s, this.laneWidth)) { s.nearMiss++; this.events.push({ type: 'nearMiss' }); }
       }
-      o.passed = true;
       if (hitsRunner(o, s, this.laneWidth)) { this.onHit(o); if (!s.alive) return; }
     }
   }
