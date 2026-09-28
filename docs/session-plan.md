@@ -486,7 +486,7 @@ docs/wx-minigame-redesign.md §3.5（目录结构与分包设计）、spike/wx-t
 | S3 | 平台层 v2+wx 骨架 | 2 | S2✓ | 已合并@7141d65 | feat/s3-platform-v2 | issue #1 已关；platform v2 双实现+apps/wx 空场景+build-wx.mjs 初版 |
 | S4 | UI 框架内核 | 2 | S2✓ | 已合并@d2110a6 | feat/s4-uikit | issue #2 已关；含 fontgen SDF 内腔缺陷修复；契约 packages/ui/API.md |
 | S5 | 页面迁移 | 3 | S3✓,S4✓ | 就绪可派 | feat/s5-pages | 按 packages/ui/API.md + packages/game views 接口 |
-| S6 | wx 构建管线 | 3 | S3✓ | 就绪可派 | feat/s6-wxbuild | 以 tools/build-wx.mjs 为起点；与 S5 并行 |
+| S6 | wx 构建管线 | 3 | S3✓ | 已合并(PR#6)@0cdc5d5 | feat/s6-wxbuild | pkg-assets 分包/4MB 门禁/CI wx-build 已激活 |
 | S7 | 真机性能关 | 4 | S5,S6 | 待派发 | feat/s7-perf | 需真机 |
 | S8 | CDN+热更新 | 4 | S6 | 待派发 | feat/s8-content | 需云环境 |
 | S9 | 社交/登录/存档 | 5 | S6,S8 | 待派发 | feat/s9-social | 需正式 AppID |
