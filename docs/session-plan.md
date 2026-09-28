@@ -383,6 +383,27 @@ apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空
 汇报：格式规范要点、golden 覆盖矩阵、core 加法改动（如有）、给 S18（云复跑防作弊）的复用点。
 ```
 
+### S16a · 遥测与日志框架接口规格（波次2，纯设计，可立即）
+
+```text
+你负责为 雷霆酷跑 设计遥测与日志框架的接口规格（S16a，分支 feat/s16a-telemetry-spec，基于 origin/dev）。
+必读：AGENTS.md、CONTRIBUTING.md、docs/framework-roadmap.md §3 S16、docs/platform-adapter-v2.md（S10 契约，
+遥测将挂在 v2 平台上）、docs/manifest-schema.md（热更新命中率埋点对接）、docs/replay-format.md（数据形状对齐）。
+约束：只新增文件（docs/telemetry-spec.md + drafts/telemetry.ts），禁止修改任何既有文件——S3/S4 正在并行改 packages/*。
+
+任务：
+1. docs/telemetry-spec.md：log/metric/error 三通道接口（级别、采样、限流、批量刷写、会话标识）；
+   web 实现映射（console+缓冲+sendBeacon）与 wx 实现映射（wx.getRealtimeLogManager 实时日志、云数据库上报）；
+   关键埋点清单：首屏耗时（boot 分阶段打点）、局内帧时间分布（p50/p95）、内存水位（wx.getPerformance）、
+   配置热更新命中率、崩溃栈与 unhandledrejection；
+   config 技术段 telemetry 节设计（采样率/开关/批量大小）+ schema/configValidator 同步说明。
+2. drafts/telemetry.ts：可编译类型草案（Telemetry 接口+事件类型+no-op 实现签名），
+   npx tsc --noEmit 单独验证，不挂仓库 tsconfig。
+3. 与 S18（防作弊上报）、S19b（perf bench）的数据形状对齐：复用 eventsSha256/结果摘要结构。
+验收：类型草案 --noEmit 通过；埋点清单覆盖 framework-roadmap §3 S16 全部条目。
+汇报：接口设计决策清单、埋点清单、给 S16b（实现，依赖 S3 合入）的拆分建议。
+```
+
 ## 3. 状态登记板
 
 | 会话 | 任务 | 波次 | 依赖 | 状态 | 分支 | 备注 |
@@ -402,8 +423,9 @@ apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空
 | S13 | UI 布局纯逻辑内核 | 1.5 | - | 已合并@ce82749 | feat/s13-ui-layout | spike/ui-layout，82 例绿，API.md 为 S4 契约 |
 | S14 | manifest 原型 | 1.5 | - | 已合并@138a074 | feat/s14-manifest | docs/manifest-schema.md + publish-content.mjs，22 例绿 |
 | S15 | CI/CD 门禁 | 2 | - | 已合并(PR#5) | feat/s15-ci | CI 双平台绿（run 36371594917）；issue #3 已关 |
-| S19a | golden-master+输入重放 | 2 | - | 已派发(本队) | feat/s19a-replay | S15 完成后接续；S18 地基 |
-| S16 | 遥测/日志框架 | 3 | S3 | 待派发 | feat/s16-telemetry | |
+| S19a | golden-master+输入重放 | 2 | - | 已合并@1ef3481 | feat/s19a-replay | 155/155 绿；issue #4 已关；golden 与 config 玩法段绑定，改数值需审查后 --update |
+| S16a | 遥测接口规格 | 2 | - | 待派发 | feat/s16a-telemetry-spec | 纯文档+类型草案，零冲突；S16b 实现的契约 |
+| S16b | 遥测/日志实现 | 3 | S3,S16a | 待派发 | feat/s16-telemetry | 契约见 S16a 规格 |
 | S17 | 音频框架 | 3 | S3 | 待派发 | feat/s17-audio | 资源由内容侧投放 |
 | S19b | UI 快照+perf bench | 4 | S4,S6 | 待派发 | feat/s19b-bench | |
 | S18 | 存档防作弊(云复跑) | 5 | S9,S19a | 待派发 | feat/s18-anticheat | 确定性 sim 复跑校验 |
