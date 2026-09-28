@@ -410,10 +410,10 @@ apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空
 |------|------|------|------|------|------|------|
 | S1 | 工具小修 | 0 | - | 已合并@4dbd1bc | feat/s1-toolfix | check.mjs ALL PASS，92/92 |
 | S2 | monorepo 搬迁 | 1 | S1(已吸收) | 已合并@7698848 | feat/s2-workspace | check ALL PASS；提交曾误落 s11 分支，已修正指针 |
-| S3 | 平台层 v2+wx 骨架 | 2 | S2✓ | 已派发 | feat/s3-platform-v2 | 正式版提示词已注入 S10 规格+S11 路线B |
-| S4 | UI 框架内核 | 2 | S2✓ | 已派发 | feat/s4-uikit | 正式版已注入 S12/S13 产物；禁碰 platform* |
-| S5 | 页面迁移 | 3 | S3,S4 | 待派发 | feat/s5-pages | |
-| S6 | wx 构建管线 | 3 | S3 | 待派发 | feat/s6-wxbuild | 与 S5 并行 |
+| S3 | 平台层 v2+wx 骨架 | 2 | S2✓ | 已合并@7141d65 | feat/s3-platform-v2 | issue #1 已关；platform v2 双实现+apps/wx 空场景+build-wx.mjs 初版 |
+| S4 | UI 框架内核 | 2 | S2✓ | 已合并@d2110a6 | feat/s4-uikit | issue #2 已关；含 fontgen SDF 内腔缺陷修复；契约 packages/ui/API.md |
+| S5 | 页面迁移 | 3 | S3✓,S4✓ | 就绪可派 | feat/s5-pages | 按 packages/ui/API.md + packages/game views 接口 |
+| S6 | wx 构建管线 | 3 | S3✓ | 就绪可派 | feat/s6-wxbuild | 以 tools/build-wx.mjs 为起点；与 S5 并行 |
 | S7 | 真机性能关 | 4 | S5,S6 | 待派发 | feat/s7-perf | 需真机 |
 | S8 | CDN+热更新 | 4 | S6 | 待派发 | feat/s8-content | 需云环境 |
 | S9 | 社交/登录/存档 | 5 | S6,S8 | 待派发 | feat/s9-social | 需正式 AppID |
@@ -424,9 +424,9 @@ apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空
 | S14 | manifest 原型 | 1.5 | - | 已合并@138a074 | feat/s14-manifest | docs/manifest-schema.md + publish-content.mjs，22 例绿 |
 | S15 | CI/CD 门禁 | 2 | - | 已合并(PR#5) | feat/s15-ci | CI 双平台绿（run 36371594917）；issue #3 已关 |
 | S19a | golden-master+输入重放 | 2 | - | 已合并@1ef3481 | feat/s19a-replay | 155/155 绿；issue #4 已关；golden 与 config 玩法段绑定，改数值需审查后 --update |
-| S16a | 遥测接口规格 | 2 | - | 待派发 | feat/s16a-telemetry-spec | 纯文档+类型草案，零冲突；S16b 实现的契约 |
-| S16b | 遥测/日志实现 | 3 | S3,S16a | 待派发 | feat/s16-telemetry | 契约见 S16a 规格 |
-| S17 | 音频框架 | 3 | S3 | 待派发 | feat/s17-audio | 资源由内容侧投放 |
+| S16a | 遥测接口规格 | 2 | - | 已合并@a869e47 | feat/s16a-telemetry-spec | docs/telemetry-spec.md + drafts/telemetry.ts |
+| S16b | 遥测/日志实现 | 3 | S3✓,S16a✓ | 就绪可派 | feat/s16-telemetry | 契约见 docs/telemetry-spec.md |
+| S17 | 音频框架 | 3 | S3✓ | 就绪可派 | feat/s17-audio | 资源由内容侧投放 |
 | S19b | UI 快照+perf bench | 4 | S4,S6 | 待派发 | feat/s19b-bench | |
 | S18 | 存档防作弊(云复跑) | 5 | S9,S19a | 待派发 | feat/s18-anticheat | 确定性 sim 复跑校验 |
 
