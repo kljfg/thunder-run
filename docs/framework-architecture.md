@@ -54,6 +54,9 @@ packages/ui   packages/render  packages/audio  packages/telemetry
 | golden-master | tests/golden/（15 组 seed×角色） | tools/replay/golden-gen.mjs | CI/内容侧协议 | ✅ S19a |
 | 热更新 manifest | docs/manifest-schema.md + tools/publish-content.mjs | S8 客户端接线 | configLoader、platform-wx | ✅ 原型，S8 实装 |
 | wx 构建产物结构 | docs/wx-minigame-redesign.md §3.5 + tools/build-wx.mjs | S6 | apps/wx、CI wx-build | ✅ S6（4MB 门禁已激活） |
+| EffectWorld（效果→世界回调） | packages/core/src/effects/effectTypes.ts | core/simWorld | buffEngine | ✅ M2 审计后含 `extendFlight`（飞行续时补铺空中内容） |
+| TrackGen 清障口 | packages/core/src/sim/trackGen.ts `clearObstacles(obs,fromZ,toZ,lane?)` | core | movement/landing、simWorld | ✅ M2 审计后取代 `openSky/closeSky`（飞行不再清场，改着陆走廊清道） |
+| RunSummary.charName / BEST_KEY | packages/game/src/views.ts + mainFlow.ts | game | apps/* 结算页 | ✅ M2 审计：结算显示角色名；最佳分键修正为 `thunderrun:best` 并迁移旧笔误键 |
 
 ## 4. 关键数据流
 
@@ -75,6 +78,15 @@ packages/ui   packages/render  packages/audio  packages/telemetry
 | （S17 ✅ 已合并） | — | — |
 | S20（整合） | 接线专属：bootstrap/mainFlow/runnerScene 的埋点与音频挂点、platform-wx 通道注册 | 不做新功能 |
 
+**已合并的越轨提交收编**：`fix/m2-runtime-bugs`（mostny，M2 运行时审计 7 项 + 飞行链路回合二 + render 表现修复，6 提交）
+经协调者裁决全量接受，合并于 `f2d1948`。遗留交接项：
+1. **S5 须复刻的语义**（原改动落在退役中的 DOM `screens.ts`/`style.css`）：结算页「新纪录」用严格 `>`（同分不算）、
+   显示 `charName` 而非 charId、窄屏下角色卡全部可达、`body { overscroll-behavior: none }`（触屏下拉刷新）。
+   `webPlatform.ts` 的 `touchAction: none` 与 keydown `e.repeat` 过滤是持久实现，已保留。
+2. **golden 基线已重生成**（`986e2a4`）：生存曲线明显变化（如 g-777-char_volt 609m→196m），需按 content-track §1.3
+   知会内容侧确认难度体感；config 玩法段未被改动。
+3. 后续改 core 飞行/清障逻辑者注意：`TrackGen.openSky/closeSky` 已删除，改用 `clearObstacles` + `landing.ts` 清道。
+
 **分支模型**：`main` = 里程碑快照（默认分支，克隆即得稳定态）；`dev` = 集成分支（PR 目标）；`feat/sN-*` 框架任务分支；`content/*` 内容分支。评审合并由协调者执行，CI 双平台门禁强制。
 
 ## 6. S20 整合接线清单（波次3.5，协调者执行）
@@ -93,12 +105,12 @@ packages/ui   packages/render  packages/audio  packages/telemetry
 | S8（内容分发） | CDN 选型：微信云开发存储 vs 外部 CDN（需备案域名）；manifest 发布审批流 | 用户拍板 |
 | S9（社交） | 云后端：微信云开发 vs 自建（code2session 落点）；主体类型确认 | 用户拍板 |
 | S18（防作弊） | 复跑校验的采样率与算力预算；校验失败的处置策略（影子榜/拒绝） | 框架提案 |
-| S19b（测试基建） | UI 快照阈值与基线更新流程；perf bench 进 CI 的门禁线 | 框架提案 |
+| S19b（测试基建） | UI 快照阈值与基线更新流程；perf bench 进 CI 的门禁线；**golden 覆盖补飞行链路**（现 15 组重放均不含飞行道具，飞行/滑翔回归只有 coreFlightFix 白盒覆盖） | 框架提案 |
 | 上架 | 软著/自审报告/隐私接口声明——与开发并行推进 | 用户 |
 
 ## 8. 当前完成度快照（2026-09-28）
 
-- 已合并：S1 S2 S3 S4 S6 S10-S15 S16a S17 S19a（330 测试例，CI 双平台+wx 体积门禁绿）
+- 已合并：S1 S2 S3 S4 S6 S10-S15 S16a S17 S19a + M2 运行时审计修复（`f2d1948`）；354 测试例（0 fail），check ALL PASS
 - 在飞：S5（页面迁移）、S16b（遥测实现）
 - 内容轨道：C1/C2 已派发（issue #7/#8），可与框架波次并行
 - 下一波：S20 整合 → S7/S8/S19b → S9/S18 → 上架材料
