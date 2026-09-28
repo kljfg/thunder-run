@@ -485,7 +485,7 @@ docs/wx-minigame-redesign.md §3.5（目录结构与分包设计）、spike/wx-t
 | S2 | monorepo 搬迁 | 1 | S1(已吸收) | 已合并@7698848 | feat/s2-workspace | check ALL PASS；提交曾误落 s11 分支，已修正指针 |
 | S3 | 平台层 v2+wx 骨架 | 2 | S2✓ | 已合并@7141d65 | feat/s3-platform-v2 | issue #1 已关；platform v2 双实现+apps/wx 空场景+build-wx.mjs 初版 |
 | S4 | UI 框架内核 | 2 | S2✓ | 已合并@d2110a6 | feat/s4-uikit | issue #2 已关；含 fontgen SDF 内腔缺陷修复；契约 packages/ui/API.md |
-| S5 | 页面迁移 | 3 | S3✓,S4✓ | 进行中 | feat/s5-pages | 改动尚未提交（主工作区，基线 ca85d3f 已落后 dev）；需 rebase 到新 dev，并复刻 f2d1948 遗留的 4 项 DOM 语义（见 framework-architecture §5） |
+| S5 | 页面迁移 | 3 | S3✓,S4✓ | 已合并@cd9008b | feat/s5-pages | 协调者代提交并 rebase 到 dev；吸收 f2d1948 交接项（严格 >/charName/overscroll）；364 例 0 fail；**架构偏离**：web 端双 canvas 双 renderer，单 renderer 两 pass 转 S20；待手测全流程 |
 | S6 | wx 构建管线 | 3 | S3✓ | 已合并(PR#6)@0cdc5d5 | feat/s6-wxbuild | pkg-assets 分包/4MB 门禁/CI wx-build 已激活 |
 | S7 | 真机性能关 | 4 | S5,S6 | 待派发 | feat/s7-perf | 需真机 |
 | S8 | CDN+热更新 | 4 | S6 | 待派发 | feat/s8-content | 需云环境 |
@@ -500,7 +500,7 @@ docs/wx-minigame-redesign.md §3.5（目录结构与分包设计）、spike/wx-t
 | S16a | 遥测接口规格 | 2 | - | 已合并@a869e47 | feat/s16a-telemetry-spec | docs/telemetry-spec.md + drafts/telemetry.ts |
 | S16b | 遥测/日志实现 | 3 | S3✓,S16a✓ | 待评审 | feat/s16b-telemetry | 已提交@330865a（worktree ..\tr-s16b，工作区干净）但**未 push、无 PR**；基线在 S17 合入前，需 rebase（注意 81d2b06 的 package-lock） |
 | S17 | 音频框架 | 3 | S3✓ | 已合并@f70f79b | feat/s17-audio | AudioEngine+双端 backend，28 例；接线留 S20；提交曾错落 s6 分支已收编 |
-| S20 | 整合接线 | 3.5 | S5,S6,S16b,S17 | 待派发 | feat/s20-integration | 短任务：telemetry 埋点/audio 事件/wx 通道注册；协调者执行 |
+| S20 | 整合接线 | 3.5 | S5✓,S6✓,S16b,S17✓ | 待派发 | feat/s20-integration | 短任务：telemetry 埋点/audio 事件/wx 通道注册 + **UI 与主场景单 renderer 两 pass 串接**（S5 遗留，wx 侧双 canvas 代价高，优先级最高）；协调者执行 |
 | S19b | UI 快照+perf bench | 4 | S4,S6 | 待派发 | feat/s19b-bench | 追加：golden 覆盖补飞行链路（现 15 组重放均不含飞行道具） |
 | S18 | 存档防作弊(云复跑) | 5 | S9,S19a | 待派发 | feat/s18-anticheat | 确定性 sim 复跑校验 |
 | M2-fix | M2 运行时审计修复（mostny，非 S 编号） | — | - | 已合并@f2d1948 | fix/m2-runtime-bugs | 6 提交全量接受；354 例 0 fail；golden 基线重生成；契约变更 EffectWorld.extendFlight / TrackGen.clearObstacles |
