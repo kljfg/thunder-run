@@ -858,10 +858,9 @@
       "coin": 49,
       "death": 1,
       "hit": 1,
-      "pickup": 1,
       "protected": 1
     },
-    "eventsSha256": "2ec3139c05ba2b68ad84cb2670163b7772ecd2228fc8f5c27031853797fea2f3",
+    "eventsSha256": "28c7d025184d2092fb3cc00ecbbd4e232d8617c2ca7a59d33cf550a65bee0d04",
     "inputsSha256": "d42957334761c8ea4b10d680f2a44dbfffef32dd40714364198a0439417048a8"
   }
 }
