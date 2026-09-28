@@ -1,5 +1,7 @@
 # 雷霆酷跑 · 网页版（实现仓库）
 
+[![CI](https://github.com/kljfg/thunder-run/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/kljfg/thunder-run/actions/workflows/ci.yml)
+
 > 实现仓库。设计与规范的唯一事实源在文档库 `D:\gpt-6\work\酷跑小游戏`（下称 docs 库），本仓库只放代码与可运行配置。
 > 当前进度：**M2 数据驱动接入 4/5**（T2.1 参数外置 · T2.2 效果原语引擎 · T2.3 道具掉落 · T2.4 角色装配与技能）；
 > **M5 工程化切换已完成**（npm workspaces 拆包 `src/` → `packages/* + apps/web`，tsc -b + Vite 构建链，three/tsc 切 npm 依赖，见 `docs/wx-minigame-redesign.md` §2/§4）。
