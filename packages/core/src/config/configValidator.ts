@@ -22,9 +22,10 @@ export function validateFile(name: string, data: unknown): string[] {
   if (!file || typeof file !== 'object') return [`${name}: 不是 JSON 对象`];
   if (typeof file.configVersion !== 'string') errors.push(`${name}: 缺少 configVersion`);
 
-  // game / economy：参数集，只查 params 是非空对象
+  // game / economy：参数集，只查 params 是非空对象；game 另有技术段 ui 的数值范围校验
   if (name === 'game' || name === 'economy') {
     if (!file.params || typeof file.params !== 'object') errors.push(`${name}: 缺少 params 对象`);
+    if (name === 'game' && file.params) errors.push(...validateUiParams((file.params as Record<string, unknown>).ui));
     return errors;
   }
   // obstacles：三段结构分别校验
@@ -130,5 +131,49 @@ export function validateRefs(content: GameContent): string[] {
   }
   // dropTable 权重键必须指向 pickup 道具
   for (const key of Object.keys(content.obstacles.dropTable?.weights ?? {})) need('obstacles.dropTable', key, items, 'dropTable.weights');
+  return errors;
+}
+
+/**
+ * 技术段 params.ui（S4 自绘 UI 手感参数，与 packages/ui/src/uiConfig.ts 默认值同源）。
+ * 缺省段/字段不报错（运行时按 defaultUiConfig 兜底）；出现即校验类型与范围，防手滑数值进包。
+ */
+const UI_RULES: { section: string; key: string; min: number; max: number; minOpen: boolean }[] = [
+  { section: 'scroll', key: 'frictionPerS', min: 0, max: 60, minOpen: true },
+  { section: 'scroll', key: 'minVelocityPxS', min: 0, max: 1000, minOpen: false },
+  { section: 'scroll', key: 'flingMaxPxS', min: 0, max: 60000, minOpen: true },
+  { section: 'scroll', key: 'overscrollResist', min: 0, max: 1, minOpen: true },
+  { section: 'scroll', key: 'bounceStiffness', min: 0, max: 5000, minOpen: true },
+  { section: 'scroll', key: 'bounceDamping', min: 0, max: 500, minOpen: true },
+  { section: 'scroll', key: 'settleEpsPx', min: 0, max: 10, minOpen: true },
+  { section: 'scroll', key: 'settleEpsPxS', min: 0, max: 200, minOpen: true },
+  { section: 'press', key: 'slopPx', min: 0, max: 100, minOpen: false },
+  { section: 'press', key: 'tapMaxMs', min: 0, max: 5000, minOpen: true },
+  { section: 'doubleTap', key: 'windowMs', min: 0, max: 2000, minOpen: true },
+  { section: 'doubleTap', key: 'maxDistPx', min: 0, max: 500, minOpen: true },
+  { section: 'text', key: 'fontSizePx', min: 4, max: 200, minOpen: false },
+  { section: 'text', key: 'lineHeightMul', min: 0.8, max: 4, minOpen: false },
+];
+
+export function validateUiParams(ui: unknown): string[] {
+  if (ui === undefined) return [];
+  if (!ui || typeof ui !== 'object') return ['game.params.ui: 应为对象（技术段，S4）'];
+  const errors: string[] = [];
+  const obj = ui as Record<string, unknown>;
+  for (const section of ['scroll', 'press', 'doubleTap', 'text']) {
+    const sec = obj[section];
+    if (sec === undefined) continue;
+    if (!sec || typeof sec !== 'object') { errors.push(`game.params.ui.${section}: 应为对象`); continue; }
+  }
+  for (const rule of UI_RULES) {
+    const sec = obj[rule.section];
+    if (!sec || typeof sec !== 'object') continue;
+    const v = (sec as Record<string, unknown>)[rule.key];
+    if (v === undefined) continue;
+    const where = `game.params.ui.${rule.section}.${rule.key}`;
+    if (typeof v !== 'number' || !Number.isFinite(v)) { errors.push(`${where}: 应为有限数值（得到 ${JSON.stringify(v)}）`); continue; }
+    const lo = rule.minOpen ? v > rule.min : v >= rule.min;
+    if (!lo || v > rule.max) errors.push(`${where}: ${v} 超出范围 ${rule.minOpen ? '(' : '['}${rule.min}, ${rule.max}]`);
+  }
   return errors;
 }
