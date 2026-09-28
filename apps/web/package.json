@@ -13,6 +13,11 @@
     "@tr/core": "*",
     "@tr/platform": "*",
     "@tr/platform-web": "*",
-    "@tr/render": "*"
+    "@tr/render": "*",
+    "@tr/ui": "*",
+    "three": "0.160.1"
+  },
+  "devDependencies": {
+    "@types/three": "0.160.0"
   }
 }

@@ -19,7 +19,7 @@
 |------|------|
 | `npm run check` | 编译 + 单测 + 配置校验 + 架构禁令，一键全绿才算完成 |
 | `npm run build` | tsc -b 类型构建（project references，产物在各包 `dist/`） |
-| `npm test` | node:test 单测（123 例；**必须先 build**，测试 import dist 产物） |
+| `npm test` | node:test 单测（275 例；**必须先 build**，测试 import dist 产物） |
 | `npm run dev` | Vite 调试壳（apps/web），URL 加 `?debug` 出自动化探针 `__trRun.*` |
 | `npm run build:web` | 网页端生产构建 |
 
@@ -28,13 +28,12 @@
 ```
 packages/core          纯逻辑：sim/效果引擎/配置/rng（禁 DOM/three/平台代码）
 packages/render        three.js 场景层（只依赖 WebGL canvas 抽象）
-packages/ui            自绘 UI（建设中，S4/S5）
+packages/ui            自绘 UI 框架（S4）：S13 布局内核 + Overlay/控件/SDF 文本（契约见 packages/ui/API.md）
 packages/platform      PlatformAdapter 接口（v2 规格见 docs/platform-adapter-v2.md）
 packages/platform-web  网页实现
 packages/platform-wx   微信实现（骨架，S3 填充）
-apps/web               调试壳（Vite）
+apps/web               调试壳（Vite；?ui=demo 为 S4 自绘 UI 演示页）
 spike/wx-three         three×小游戏可行性验证结论（S11，已定路线 B 最小垫片）
-spike/ui-layout        UI 布局/命中纯逻辑内核（S13，待 S4 搬入 packages/ui）
 tools/                 check.mjs、校验脚本、fontgen（SDF 字体生成）
 config/                8 个内容配置（与设计文档库同源，改动需双向同步）
 docs/                  重设计方案、会话协调计划、manifest schema

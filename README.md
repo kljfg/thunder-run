@@ -69,7 +69,7 @@ thunder-run/
 ├── config/                     8 个内容配置（与 docs 库 config/ 同源，改完两边要同步；Vite publicDir 挂载）
 ├── vendor/                     three.js r160 运行时 + 类型（M5 起仅作回滚/离线兜底，构建链已切 npm 依赖）
 ├── tools/                      check.mjs 四步聚合 / 禁令脚本 / tsc vendor 兜底 / serve.py 静态兜底
-├── tests/                      node:test 单元测试（92 例，import 各包 dist/ 产物）
+├── tests/                      node:test 单元测试（275 例，import 各包 dist/ 产物）
 └── <各包>/dist/                编译产物（不入库，tsc -b 生成）
 ```
 
