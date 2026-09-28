@@ -141,46 +141,119 @@ assets/fonts/README.md + latin/cjk 两张图集与 metrics.json（S12 SDF 规格
 汇报：控件 API 终版（S5 迁移依据）、字体渲染参数、与 S3 的耦合点清单（合流时协调者处理）。
 ```
 
-### S5 · 五页面迁移（波次3）
+### S5 · 五页面迁移（波次3 · 正式派发版，已注入 S3/S4 交付物）
 
 ```text
-你负责把 雷霆酷跑 的全部 DOM 页面迁移到自绘 UI（重设计文档 §3.3/§3.4，里程碑 M7），分支 feat/s5-pages。
-依赖：S3 的 PlatformAdapter v2 与 S4 的 ui 控件库均已合入（开工前读 packages/ui 与 packages/platform 最新 API）。
+你负责把 雷霆酷跑 的全部 DOM 页面迁移到自绘 UI（重设计文档 §3.3/§3.4，M7），分支 feat/s5-pages，基于 origin/dev。
+开工必读：AGENTS.md、CONTRIBUTING.md、packages/ui/API.md（S4 控件契约）、packages/game/src/views.ts +
+mainFlow.ts（S3 提取的 GameViews 接口与主流程）、apps/web/src/views.ts + ui/screens.ts（待退役的 DOM 实现）、
+?ui=demo 演示页源码（S4 的控件用法范例）。
+
+文件所有权（并行纪律，越界即冲突）：
+- 你拥有：packages/game/src/（views 实现改造）、apps/web/src/ 与 style.css/index.html、packages/ui 的缺陷修复
+  （API 不变，改 API 先在汇报中提理由）、tests/ 新增页面用例。
+- 禁碰：packages/platform*、tools/、apps/wx、.github/、packages/audio|telemetry（S6/S16b/S17 并行中）。
 
 任务：
-1. 用 S4 控件重建 5 个页面：boot（加载/错误态）、login（游客+测试 openid 输入，走 platform 注入的 login 占位）、
-   menu（角色卡片可滑动列表、技能/被动文案、清缓存按钮）、run HUD（分数/金币/buff 槽/技能条，数据源仍是
-   runnerScene 的 onHud 推送）、result（得分/最佳/重开/回菜单）。对照现 apps/web 里 screens.ts 的信息与交互逐项映射。
-2. bootstrap 主流程改接 overlay UI，删除 screens.ts 及 style.css 中废弃样式；index.html 只剩挂载点。
-3. 两端同一套 UI 是验收标准：所有页面代码 0 处 document/window（check-import-rules 会盯）。
-4. 键盘快捷键（Esc 退菜单、Enter=游客登录）仅 web 壳经 onKey 注入，逻辑不变。
-5. tests 补页面状态流转用例（可在 node 端测 overlay view model，不必渲染像素）；?debug 探针行为不回退。
+1. 用 @tr/ui 实现 GameViews 的 overlay 版（boot/login/menu/run HUD/result 五页面），信息与交互对照
+   screens.ts 逐项映射：菜单角色卡片改可滑动 List、HUD 数据源仍是 runnerScene onHud 推送、
+   结算含技能释放次数。OrthoOverlay 与主场景的 render pass 串接由你在 packages/game/apps/web 层完成。
+2. apps/web 切换：bootstrap 装配 overlay 版 views；删除 screens.ts 与 views.ts(DOM 版) 及 style.css 废弃样式；
+   index.html 只剩挂载点。键盘快捷键（Esc/Enter）仅 web 壳经 onKey 注入。
+3. 两端同一套 UI 是验收标准：页面代码 0 处 document/window（禁令脚本会盯）。
+4. tests 补页面流转用例（node 端测 view model，不必渲染像素）；?debug 探针（__trRun.*）行为不回退；
+   ?ui=demo 保留。
+5. 登录页在 wx 侧走 WxExtras.login 占位（guest 模式），web 侧保留测试 openid 输入——两端同一 view，差异只在注入。
 
-验收：node tools/check.mjs 全绿 + web 壳全流程手测（启动→登录→选角色→跑一局→结算→重开）+ 与迁移前逐页对照清单。
-汇报：页面映射表（DOM 元素→控件）、删除文件清单、接口层发现的不顺手点（给 S6/S7 参考）。
+验收：npm run check 全绿 + web 壳全流程手测（启动→登录→选角色→跑一局→结算→重开）+ 逐页对照清单。
+汇报：页面映射表（DOM→控件）、删除文件清单、GameViews 接口的不顺手点（给 S7/整合会话参考）。
 ```
 
-### S6 · apps/wx 构建管线（波次3，与 S5 并行）
+### S6 · apps/wx 构建管线（波次3 · 正式派发版，以 S3 的 build-wx.mjs 为起点）
 
 ```text
-你负责 雷霆酷跑 的小游戏产物构建（重设计文档 §3.5，衔接 M6→M8），分支 feat/s6-wxbuild。
-依赖：S3 已合入（platform-wx + apps/wx 工程壳 + 空场景）。与 S5（页面迁移）并行：你只动构建链路与
-apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空场景或占位 HUD 即可。
+你负责 雷霆酷跑 的小游戏产物构建管线（重设计文档 §3.5，衔接 M6→M8），分支 feat/s6-wxbuild，基于 origin/dev。
+开工必读：AGENTS.md、CONTRIBUTING.md、tools/build-wx.mjs（S3 初版，你的起点）、apps/wx/（S3 工程壳）、
+packages/platform-wx/src/extras.ts + network.ts（readJson/readBinary 已有实现，确认其资源定位方式）、
+docs/wx-minigame-redesign.md §3.5（目录结构与分包设计）、spike/wx-three/tools/build.mjs（S11 的打包经验）。
+
+文件所有权（并行纪律）：
+- 你拥有：tools/build-wx.mjs、tools/check-wx-size.mjs（新建）、apps/wx/**、.github/workflows/ci.yml（激活 wx-build job）、
+  packages/platform-wx 仅允许新增文件（如需资源定位辅助），改既有文件须在汇报中列明理由。
+- 禁碰：packages/game、apps/web/src、packages/ui（S5 并行中）、packages/audio|telemetry（S16b/S17 并行中）。
 
 任务：
-1. tools/build-wx.mjs + Vite lib 配置：把 packages/* 与 apps/wx 入口 bundle 成小游戏可用的
-   CommonJS 产物（微信后台按 CommonJS 处理；目标微信基础库现行版本），输出目录结构见重设计文档 §3.5。
-2. 分包落地：game.json subpackages 配好 pkg-assets（字体图集、非默认角色模型与主题贴图、config/*.json）；
-   主包产物体积打印进构建日志，硬门槛主包 ≤4MB（超出即 fail）。
-3. 资源读取：packages/platform-wx 补 readJson/readBinary：优先 wx.getFileSystemManager 读分包资源，
-   网络 URL 走 wx.downloadFile（为 S8 的 CDN 预留同一接口）。config 装载链（configLoader 的 FileSource）
-   切到该接口，web 壳继续用 fetch——两端 config 内容保持同源。
-4. 开发者工具验证：给出「用微信开发者工具打开 apps/wx/dist 并看到空场景」的步骤；若装了 CLI，
-   构建脚本尾部提示/自动调用预览刷新（auto 预览 token 缺失则跳过并说明）。
-5. tools/check.mjs 增加第 5 步：node tools/build-wx.mjs --dry（只 bundle 校验不发布），全链路防回归。
+1. bundle 管线完善：packages/* + apps/wx 入口 → 小游戏可用产物（模块格式按微信现行基础库），
+   输出 apps/wx/dist/（结构见重设计文档 §3.5）；three 走 npm 依赖 tree-shaking。
+2. 分包落地：game.json subpackages 配 pkg-assets（assets/fonts 图集、config/*.json、非默认角色/主题资源占位）；
+   wx.loadSubpackage 时序接进启动流程。
+3. 体积门禁：tools/check-wx-size.mjs——主包 >4MB 即 fail，构建日志打印主包/分包体积表；
+   ci.yml 激活 wx-build job（接 check-wx-size + upload-artifact）。
+4. config 装载链验证：wx 侧经 extras.readJson 读分包内 config，web 侧 fetch 不变，两端同源；
+   若 extras 现有实现不满足分包路径，新增辅助文件解决而非改 S3 代码。
+5. check.mjs 增第 5 步：node tools/build-wx.mjs --dry（bundle 校验不发布）。
+6. 开发者工具验证步骤文档（apps/wx/README.md 更新）：导入 dist、看到当前可跑内容（S5 未合入前是空场景/占位 HUD 即可）。
 
-验收：node tools/check.mjs 全绿（含新第 5 步）；开发者工具模拟器截图：分包加载日志 + 主包体积数字。
-汇报：产物目录树、主包/分包体积表、留给 S7 的真机验证清单与 S8 的 CDN 接口点。
+验收：npm run check 全绿（含 --dry 第 5 步）；CI wx-build job 绿；体积表与分包加载日志截图或文字记录。
+汇报：产物目录树、主包/分包体积、留给 S7 的真机清单、S8 的 CDN 接口点、对 platform-wx 既有文件的改动清单（如有）。
+```
+
+### S16b · 遥测/日志实现（波次3 · web 通道先行，wx 通道待 S6 后补）
+
+```text
+你负责 雷霆酷跑 遥测与日志框架的实现（框架-roadmap §3 S16），分支 feat/s16b-telemetry，基于 origin/dev。
+契约：docs/telemetry-spec.md + drafts/telemetry.ts（S16a 规格，实现以此为准，偏离须汇报理由）。
+开工必读：AGENTS.md、CONTRIBUTING.md、docs/telemetry-spec.md、docs/replay-format.md（数据形状对齐）。
+
+文件所有权（并行纪律）：
+- 你拥有：packages/telemetry/**（新建包，注册进根 workspaces 由你改根 package.json 的 workspaces 无需动——
+  packages/* 通配已覆盖，只加包内 package.json/tsconfig）、drafts/telemetry.ts 定稿迁包、tests/telemetry*.test.mjs、
+  packages/platform-web/src/telemetryChannel.ts（新文件，独立导出不改 webPlatform.ts）。
+- 禁碰：packages/game、apps/web/src（S5 并行中——boot/mainFlow 埋点接线延后到整合会话，本任务交付「即插即用」API 与接线说明）、
+  packages/platform-wx（S6 并行中——wx 实时日志通道写好类与单测但注册留 TODO，S6 合入后由整合会话接线）、
+  packages/audio（S17 并行中）。
+
+任务：
+1. packages/telemetry：Telemetry 接口实现——log/metric/error 三通道、级别过滤、采样/限流、批量缓冲刷写、
+   会话标识、no-op 实现（默认关闭时零开销）。
+2. web 通道：console + 缓冲 + sendBeacon 上报端点可配；wx 通道类（wx.getRealtimeLogManager + 云上报队列）
+   代码与单测齐备，注册入口留 TODO 注明接线点。
+3. config 技术段 telemetry 节（采样率/开关/批量大小）+ schema/configValidator 同步（只动技术段）。
+4. 埋点 SDK 面：markBoot(stage)/frameTime(dt)/memory(bytes)/configSource(hit)/unhandledError——
+   签名对齐 spec；写 docs/telemetry-wiring.md 说明 S5 合流后各埋点在 mainFlow/bootstrap/runnerScene 的接线位置。
+5. 与 S18 对齐：上报体含 eventsSha256/摘要结构的复用导出。
+
+验收：npm run check 全绿（新增 telemetry 单测：缓冲/限流/采样/no-op 零开销断言）；类型契约与 spec 偏差清单。
+汇报：API 终版、wx 通道接线点清单（整合会话执行）、埋点接线说明摘要。
+```
+
+### S17 · 音频框架（波次3 · 框架+web 实现，事件接线延后）
+
+```text
+你负责 雷霆酷跑 的音频框架（框架-roadmap §3 S17），分支 feat/s17-audio，基于 origin/dev。
+开工必读：AGENTS.md、CONTRIBUTING.md、docs/wx-minigame-redesign.md §3.1/§6、packages/platform/src/extras.ts
+（WxExtras 占位模式参考）、packages/render/src/runnerScene.ts 的事件流（只读理解，禁改）。
+
+文件所有权（并行纪律）：
+- 你拥有：packages/audio/**（新建包）、packages/platform/src/audio.ts（新文件+barrel 一行再导出）、
+  packages/platform-web/src/webAudio.ts（新文件，独立导出不改 webPlatform.ts）、assets/audio/**（占位音效+README 规范）、
+  tests/audio*.test.mjs。
+- 禁碰：packages/game、apps/web/src（S5）、packages/platform-wx 既有文件（S6；wx 音频实现写成独立新文件
+  packages/platform-wx/src/audio.ts 可以，但不许改 wxPlatform.ts/extras.ts，注册留 TODO）、packages/telemetry（S16b）。
+
+任务：
+1. packages/audio：AudioEngine——加载/解码/池化、BGM 与 SFX 双通道、音量/静音状态机（存档键约定
+   thunderrun:audio:*）、场景切换淡入淡出、并发上限与抢占策略（同类音效节流）。
+2. 平台接口：packages/platform/src/audio.ts 定义 AudioBackend（load/play/stop/setVolume/…）；
+   web 实现 webAudio.ts（AudioContext，含 iOS 解锁手势恢复）；wx 实现 audio.ts（wx.createInnerAudioContext 池），注册留 TODO。
+3. 资源规范：assets/audio/README.md——格式（mp3/采样率/响度归一）、命名（sfx_<事件>.mp3 / bgm_<场景>.mp3）、
+   体积预算（单音效 ≤50KB、BGM ≤500KB、总量进分包）；用工具生成 2-3 个占位音效打通管线（内容侧后续替换）。
+4. 事件挂点设计：docs/audio-events.md——列出 runnerScene/mainFlow 现有事件流里全部可挂点位
+   （拾取/受击/技能/跳铲/结算/页面切换），给出接线代码样例；实际接线延后到整合会话（S5/S6 合流后）。
+5. 单测：状态机/池化/节流逻辑 node 可测部分（backend 用 mock）。
+
+验收：npm run check 全绿；web 侧可演示（node 单测 + 文档说明，不依赖 apps/web 改动）。
+汇报：AudioBackend 契约、挂点清单、wx TODO 接线点、给内容侧的音频资源需求单。
 ```
 
 ### S7 · 真机性能验证 + 降级预案（波次4，M6 验收）
@@ -425,8 +498,9 @@ apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空
 | S15 | CI/CD 门禁 | 2 | - | 已合并(PR#5) | feat/s15-ci | CI 双平台绿（run 36371594917）；issue #3 已关 |
 | S19a | golden-master+输入重放 | 2 | - | 已合并@1ef3481 | feat/s19a-replay | 155/155 绿；issue #4 已关；golden 与 config 玩法段绑定，改数值需审查后 --update |
 | S16a | 遥测接口规格 | 2 | - | 已合并@a869e47 | feat/s16a-telemetry-spec | docs/telemetry-spec.md + drafts/telemetry.ts |
-| S16b | 遥测/日志实现 | 3 | S3✓,S16a✓ | 就绪可派 | feat/s16-telemetry | 契约见 docs/telemetry-spec.md |
-| S17 | 音频框架 | 3 | S3✓ | 就绪可派 | feat/s17-audio | 资源由内容侧投放 |
+| S16b | 遥测/日志实现 | 3 | S3✓,S16a✓ | 待派发 | feat/s16b-telemetry | web 通道先行；wx 通道/埋点接线留整合会话 |
+| S17 | 音频框架 | 3 | S3✓ | 待派发 | feat/s17-audio | 框架+web 实现；事件接线留整合会话 |
+| S20 | 整合接线 | 3.5 | S5,S6,S16b,S17 | 待派发 | feat/s20-integration | 短任务：telemetry 埋点/audio 事件/wx 通道注册；协调者执行 |
 | S19b | UI 快照+perf bench | 4 | S4,S6 | 待派发 | feat/s19b-bench | |
 | S18 | 存档防作弊(云复跑) | 5 | S9,S19a | 待派发 | feat/s18-anticheat | 确定性 sim 复跑校验 |
 
