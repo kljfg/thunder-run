@@ -1,5 +1,5 @@
 /**
- * 一键质量检查：编译 + 单元测试 + 配置校验 + 架构禁令（等价 运行测试.bat）
+ * 一键质量检查：编译 + 单元测试 + 配置校验 + 架构禁令 + wx bundle 校验（等价 运行测试.bat）
  * 用法：node tools/check.mjs（或 npm run check）
  * 全部通过输出 ALL PASS；任何一步失败立即以该步退出码退出。
  * M5 起：编译走 node_modules 的 typescript + `tsc -b`（根 tsconfig.json 是 solution 引用链，
@@ -21,6 +21,7 @@ const STEPS = [
   ['运行单元测试', ['--test', 'tests/*.test.mjs']],
   ['配置校验', ['tools/validate-config.mjs']],
   ['架构禁令检查', ['tools/check-import-rules.mjs']],
+  ['微信小游戏 bundle 校验（--dry 不发布）', ['tools/build-wx.mjs', '--dry']],
 ];
 
 STEPS.forEach(([name, args], i) => {
