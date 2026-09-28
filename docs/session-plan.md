@@ -347,19 +347,19 @@ apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空
 | 会话 | 任务 | 波次 | 依赖 | 状态 | 分支 | 备注 |
 |------|------|------|------|------|------|------|
 | S1 | 工具小修 | 0 | - | 已合并@663a4bb | feat/s1-toolfix | check.mjs ALL PASS，92/92 |
-| S2 | monorepo 搬迁 | 1 | S1(已吸收) | 进行中 | feat/s2-workspace | 基于 S1 提交创建，合入前冻结其他任务 |
-| S3 | 平台层 v2+wx 骨架 | 2 | S2 | 待派发 | feat/s3-platform-v2 | |
-| S4 | UI 框架内核 | 2 | S2 | 待派发 | feat/s4-uikit | 与 S3 并行 |
+| S2 | monorepo 搬迁 | 1 | S1(已吸收) | 已合并@4efbf8e | feat/s2-workspace | check ALL PASS；提交曾误落 s11 分支，已修正指针 |
+| S3 | 平台层 v2+wx 骨架 | 2 | S2✓ | 待派发 | feat/s3-platform-v2 | 派发时注入 S10 规格+S11 路线B结论 |
+| S4 | UI 框架内核 | 2 | S2✓ | 待派发 | feat/s4-uikit | 派发时注入 S12 产物+S13 API.md，与 S3 并行 |
 | S5 | 页面迁移 | 3 | S3,S4 | 待派发 | feat/s5-pages | |
 | S6 | wx 构建管线 | 3 | S3 | 待派发 | feat/s6-wxbuild | 与 S5 并行 |
 | S7 | 真机性能关 | 4 | S5,S6 | 待派发 | feat/s7-perf | 需真机 |
 | S8 | CDN+热更新 | 4 | S6 | 待派发 | feat/s8-content | 需云环境 |
 | S9 | 社交/登录/存档 | 5 | S6,S8 | 待派发 | feat/s9-social | 需正式 AppID |
-| S10 | Adapter v2 规格 | 1.5 | - | 待派发 | feat/s10-adapter-spec | 纯文档+类型草案 |
-| S11 | three×wx spike | 1.5 | - | 待派发 | feat/s11-wx-spike | 需微信开发者工具 |
-| S12 | SDF 字体工具链 | 1.5 | - | 待派发 | feat/s12-sdf-font | 产物供 S4 搬运 |
-| S13 | UI 布局纯逻辑内核 | 1.5 | - | 待派发 | feat/s13-ui-layout | 产物供 S4 搬运 |
-| S14 | manifest 原型 | 1.5 | - | 待派发 | feat/s14-manifest | schema 供 S8 |
+| S10 | Adapter v2 规格 | 1.5 | - | 已合并@d3a28d8 | feat/s10-adapter-spec | docs/platform-adapter-v2.md + drafts/ 类型草案 |
+| S11 | three×wx spike | 1.5 | - | 已合并@4ae0bd3 | feat/s11-wx-spike | 结论：路线B最小垫片胜出，见 spike/wx-three/README.md |
+| S12 | SDF 字体工具链 | 1.5 | - | 已合并@5deed50 | feat/s12-sdf-font | assets/fonts 图集+metrics；9/9 用例绿 |
+| S13 | UI 布局纯逻辑内核 | 1.5 | - | 已合并@24b8490 | feat/s13-ui-layout | spike/ui-layout，82 例绿，API.md 为 S4 契约 |
+| S14 | manifest 原型 | 1.5 | - | 已合并@6b80772 | feat/s14-manifest | docs/manifest-schema.md + publish-content.mjs，22 例绿 |
 
 状态取值：待派发 / 进行中 / 阻塞:<原因> / 待评审 / 已合并@<commit>
 
