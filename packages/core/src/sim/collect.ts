@@ -58,8 +58,9 @@ export function collectPickups(d: CollectDeps): void {
   const { state: s, fx, pickups, laneWidth } = d;
   for (const p of pickups) {
     if (p.taken) continue;
-    const z = s.distance - p.worldZ;
-    const vacuum = fx.pickupAllT > 0 && z < VACUUM_RANGE_M && z > -3;
+    const z = s.distance - p.worldZ; // 负=前方逼近中
+    // 真空吸取方向：身前 VACUUM_RANGE_M 米、身后 3m 容差（修正前误吸的是身后 60m）
+    const vacuum = fx.pickupAllT > 0 && z > -VACUUM_RANGE_M && z < 3;
     if (!((z >= 0 && !p.passed) || vacuum)) continue;
     p.passed = true;
     const laneOK = vacuum || Math.abs(p.lane * laneWidth - s.x) < PICKUP_X_TOL;

@@ -64,9 +64,9 @@ test('头盔超时自动失效：20 秒后不再挡刀', () => {
   assert.ok(seen.has('death'), '无头盔保护，致命击应出局');
 });
 
-test('飞行器：升至 4.6 米悬停、速度 2.5 倍、区间内障碍被清空、空中有金币带与云', () => {
+test('飞行器：升至 4.6 米悬停、速度 2.5 倍、地面障碍保留（从上方掠过）、空中有金币带与云', () => {
   const sim = cleanSim(53);
-  wall(sim, 'full', 0, 60); // 前方 60m 的墙应被空中段清除
+  wall(sim, 'full', 0, 60); // 前方 60m 的墙：飞行从上方掠过（不再整段清空，用户要求可俯瞰地面内容）
   sim.pickupsArr.push({ itemRef: 'item_jetpack', lane: 0, worldZ: sim.state.distance + 8 });
   const seen = new Set();
   let maxSpeedPerStep = 0;
@@ -81,7 +81,7 @@ test('飞行器：升至 4.6 米悬停、速度 2.5 倍、区间内障碍被清�
   assert.ok(sim.state.y > 4.0, `飞行高度应接近 4.6，实际 ${sim.state.y.toFixed(2)}`);
   assert.ok(sim.state.y <= 4.75, '不能飞太高');
   assert.ok(maxSpeedPerStep * 60 > 12 * 2.5 * 0.8, '速度应接近地面 2.5 倍');
-  assert.ok(!sim.obstacles.some(o => o.worldZ > 55 && o.worldZ < 200), '空中段内不应有障碍');
+  assert.ok(sim.obstacles.some(o => o.worldZ > sim.state.distance), '飞行期地面障碍应保留并继续生成');
   const skyCoins = sim.coinsArr.filter(c => (c.y ?? 0) > 3);
   assert.ok(skyCoins.length > 30, `空中金币带数量=${skyCoins.length}，应明显更多`);
   assert.ok(sim.cloudsArr.length >= 3, '应有云团');

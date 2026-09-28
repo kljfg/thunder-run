@@ -141,12 +141,20 @@ export function createRunnerModel(colors: RunnerModelColors) {
 
   return {
     group: root,
+    /** 躯干组（本地坐标、随 root 缩放；buff 挂件挂到这里，死亡翻倒时一起倒） */
+    body,
     /** 胸口高度（米，脚底为 0），供爆点/护盾等表现对齐身体 */
     get chestY() { return ((HIP_Y + SHOULDER_Y) / 2) * colors.scale; },
+    /** 胸口本地高度（躯干组坐标系，挂件定位用） */
+    get chestLocalY() { return (HIP_Y + SHOULDER_Y) / 2; },
     /** 头顶高度，供头盔罩对齐 */
     get headY() { return (HEAD_Y + 0.38) * colors.scale; },
+    /** 头顶本地高度（躯干组坐标系，挂件定位用） */
+    get headLocalY() { return HEAD_Y + 0.38; },
     /** 雷核背包的背部挂点深度（喷气火焰对齐用） */
     get packZ() { return (pack.position.z + 0.1) * colors.scale; },
+    /** 背包挂点本地深度（躯干组坐标系，挂件定位用） */
+    get packLocalZ() { return pack.position.z + 0.1; },
     /**
      * @param t 本局时间（秒） @param distance 已跑距离（米）
      * @param mode 姿态档 @param power 摆幅强度（受击时降低） @param flash 霓虹闪烁强度（无敌期）

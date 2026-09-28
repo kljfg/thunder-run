@@ -123,12 +123,16 @@ test('jumpBoost：初速乘区让同一时刻起跳能跃过 2.6 米高杆', () 
   assert.ok(attempt(false).has('hit'), '赤脚应撞杆');
 });
 
-test('fly：升至配置高度、申请空中段、燃料尽后滑翔落地', () => {
+test('fly：升至配置高度、地面障碍保留（从上方掠过）、燃料尽后滑翔落地', () => {
   const sim = cleanSim(101);
+  // 用户反馈修正：起飞不再清空整段地面内容——飞行只是从上方掠过，地面障碍应可俯瞰
+  const wallAhead = { obsRef: 't_full', cls: 'full', w: 2.0, h: 3.2, d: 0.8, lane: 0, worldZ: sim.state.distance + 40 };
+  sim.obstacles.push(wallAhead);
   grant(sim, 'fly', { durationS: 2 });
   run(sim, 60);
   assert.ok(sim.state.y > 1, '1 秒内应已离地');
-  assert.equal(sim.obstacles.filter(o => o.worldZ > 5 && o.worldZ < 120).length, 0, '空中段内不应有障碍');
+  assert.ok(sim.obstacles.includes(wallAhead), '起飞不应清除地面障碍');
+  assert.ok(sim.state.alive, '飞越低障不应判负');
   run(sim, 60 * 4);
   assert.equal(sim.state.gliding, false, '应已落地');
   assert.equal(sim.state.y, 0);

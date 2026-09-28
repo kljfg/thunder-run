@@ -59,6 +59,8 @@ export interface EffectWorld {
   addBonusScore(points: number): void;
   /** 进入飞行段（sim 负责申请空中区间与清障） */
   startFlight(durationS: number, heightM: number | undefined): void;
+  /** 飞行中续时（再吃一个飞行道具）：把空中金币带/云团从已铺终点继续延伸到新的终点 */
+  extendFlight(durationS: number): void;
 }
 
 /** fx 的无 buff 基线（tick 每步复用，避免语义漂移） */
