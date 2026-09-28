@@ -1,0 +1,11 @@
+{
+  "name": "@tr/audio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "音频框架（S17）：AudioEngine——加载/池化、BGM+SFX 双通道、音量/静音状态机（thunderrun:audio:*）、场景淡入淡出、并发上限与抢占节流。零平台代码，经 AudioBackend 注入（platform-web/platform-wx 实现）。",
+  "exports": { "./*": "./dist/*" },
+  "dependencies": {
+    "@tr/platform": "*"
+  }
+}
