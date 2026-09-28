@@ -14,6 +14,7 @@ import { createAvatar } from './avatarRig.js';
 import { createCoinField } from './coinField.js';
 import { createCloudLayer, createObstacleLayer, createPickupLayer } from './entityLayers.js';
 import { installRunProbe, uninstallRunProbe } from './runDebugProbe.js';
+import { createSpeedLines } from './speedLines.js';
 import { createTrackVisuals } from './trackVisuals.js';
 import { createBurstPool } from './vfxBurst.js';
 
@@ -34,6 +35,8 @@ const CAM_Z = 8.4, CAM_Y_BASE = 2.7, CAM_FOLLOW = 0.25, CAM_Y_RATIO = 0.5, LOOK_
 /** 飞行/滑翔机位（审计 T2）：独立目标，更高更远、注视点抬高，保证金币与云在画面里；过渡仍走 CAM_FOLLOW */
 const CAM_AIR_Y_RATIO = 0.55, CAM_AIR_Y_BASE = 2.2, LOOK_AIR_Y_RATIO = 0.35, LOOK_AIR_Y_BASE = 0.4;
 const FOV_GROUND = 55, FOV_AIR = 64, FOV_LERP = 0.06;
+/** 加速（speedMul>1）的视野扩张：按 (speedMul-1) 线性加宽并封顶（雷霆冲刺一类技能要看得见加速） */
+const SPEED_FOV_PER_MUL = 70, SPEED_FOV_MAX = 10;
 /** 震屏：每帧衰减量与随机幅度 */
 const SHAKE_DECAY = 1 / 60, SHAKE_AMP = 0.24;
 /** 死亡后停留多久进结算页、HUD 刷新间隔（秒） */
@@ -84,6 +87,7 @@ export function createRunnerScene(
   const pickupLayer = createPickupLayer(scene, laneWidth);
   const cloudLayer = createCloudLayer(scene);
   const bursts = createBurstPool(scene);
+  const speedLines = createSpeedLines(scene, tint);
   /** 胸口位置缓存：爆点与吸入动画对齐到身体，而不是脚底原点 */
   let chestX = 0, chestY = avatar.chestY;
   const fireAtPlayer = () => bursts.fireAt(chestX, chestY, BURST_Z);
@@ -159,6 +163,8 @@ export function createRunnerScene(
     shakeT = Math.max(0, shakeT - SHAKE_DECAY);
     const sk = shakeT > 0 ? (Math.random() - 0.5) * SHAKE_AMP : 0;
     const airborne = fx.flyT > 0 || s.gliding;
+    const boost = Math.max(0, fx.speedMul - 1); // 雷霆冲刺等提速 buff 的表现强度
+    speedLines.update(dist, boost);
     const tgtCamY = airborne ? s.y * CAM_AIR_Y_RATIO + CAM_AIR_Y_BASE : s.y * CAM_Y_RATIO + CAM_Y_BASE;
     const tgtLookY = airborne ? s.y * LOOK_AIR_Y_RATIO + LOOK_AIR_Y_BASE : s.y * CAM_Y_RATIO;
     camX += (s.x - camX) * CAM_FOLLOW;
@@ -168,7 +174,7 @@ export function createRunnerScene(
     camera.position.y = camY + sk;
     camera.position.z = CAM_Z;
     camera.lookAt(camX, lookY, LOOK_AHEAD_Z);
-    const targetFov = airborne ? FOV_AIR : FOV_GROUND; // 空中视野略广，开阔感+速度感
+    const targetFov = (airborne ? FOV_AIR : FOV_GROUND) + Math.min(SPEED_FOV_MAX, boost * SPEED_FOV_PER_MUL); // 空中视野略广；加速再扩
     if (Math.abs(camera.fov - targetFov) > 0.1) {
       camera.fov += (targetFov - camera.fov) * FOV_LERP;
       camera.updateProjectionMatrix();
