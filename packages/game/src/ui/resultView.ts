@@ -1,6 +1,6 @@
 /**
  * 结算页（P6）：对照 DOM screens.renderResult 逐行映射。
- * 信息：标题（新纪录判定）/大分数/里程/金币/惊险擦身/受击/技能释放(casts·charId)/历史最佳/两个按钮。
+ * 信息：标题（新纪录判定）/大分数/里程/金币/惊险擦身/受击/技能释放(casts·charName)/历史最佳/两个按钮。
  */
 import { Box, Button, Label, Panel, type UiView } from '@tr/ui/index.js';
 import type { UiHost } from './host.js';
@@ -18,10 +18,11 @@ export interface ResultPage { view: UiView }
 export function buildResultPage(host: UiHost, d: ResultDeps): ResultPage {
   const c = host.theme.colors;
   const s = d.summary;
-  const isNew = s.score >= d.best && s.score > 0;
+  const isNew = s.score > d.best && s.score > 0; // 同分不记新纪录（f2d1948 裁决交接项）
   const view = host.makeView();
 
-  const castLine = `${s.casts ?? 0} 次${s.charId ? ' · ' + s.charId : ''}`;
+  const charText = s.charName || s.charId; // 显示角色名（char_volt→小电）；无名时退回 id
+  const castLine = `${s.casts ?? 0} 次${charText ? ' · ' + charText : ''}`;
   const card = new Panel(
     { width: { percent: 88 }, maxWidth: 420, direction: 'column', gap: 6, padding: { top: 24, bottom: 20, left: 24, right: 24 }, align: 'center' },
     [

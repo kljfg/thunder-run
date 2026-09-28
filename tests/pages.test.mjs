@@ -230,7 +230,7 @@ test('result：新纪录标题/大分/技能释放次数/历史最佳 + 两按�
     { onRetry: () => acts.push('retry'), onMenu: () => acts.push('menu') },
   );
   const t = texts(host);
-  assert.ok(t.includes('新纪录！'), 'score≥best 且 >0 → 新纪录');
+  assert.ok(t.includes('新纪录！'), 'score>best 且 >0 → 新纪录（同分不算）');
   assert.ok(t.includes('999'), '大分数行');
   assert.ok(t.some(x => x === '3 次 · char_volt'), `技能释放行，实得 ${JSON.stringify(t)}`);
   assert.ok(t.some(x => x === '800 m' || x.includes('800 m')));
