@@ -499,7 +499,7 @@ docs/wx-minigame-redesign.md §3.5（目录结构与分包设计）、spike/wx-t
 | S19a | golden-master+输入重放 | 2 | - | 已合并@1ef3481 | feat/s19a-replay | 155/155 绿；issue #4 已关；golden 与 config 玩法段绑定，改数值需审查后 --update |
 | S16a | 遥测接口规格 | 2 | - | 已合并@a869e47 | feat/s16a-telemetry-spec | docs/telemetry-spec.md + drafts/telemetry.ts |
 | S16b | 遥测/日志实现 | 3 | S3✓,S16a✓ | 待派发 | feat/s16b-telemetry | web 通道先行；wx 通道/埋点接线留整合会话 |
-| S17 | 音频框架 | 3 | S3✓ | 待派发 | feat/s17-audio | 框架+web 实现；事件接线留整合会话 |
+| S17 | 音频框架 | 3 | S3✓ | 已合并@f70f79b | feat/s17-audio | AudioEngine+双端 backend，28 例；接线留 S20；提交曾错落 s6 分支已收编 |
 | S20 | 整合接线 | 3.5 | S5,S6,S16b,S17 | 待派发 | feat/s20-integration | 短任务：telemetry 埋点/audio 事件/wx 通道注册；协调者执行 |
 | S19b | UI 快照+perf bench | 4 | S4,S6 | 待派发 | feat/s19b-bench | |
 | S18 | 存档防作弊(云复跑) | 5 | S9,S19a | 待派发 | feat/s18-anticheat | 确定性 sim 复跑校验 |
