@@ -101,9 +101,13 @@ export class BuffEngine {
     const left = Number.isFinite(raw) ? Math.min(Math.max(0, raw), MAX_DURATION) : raw;
     if (left <= 0) return; // 0 时长边界（docs/08 §3）：不产生任何状态
 
-    // 飞行第一次到手才申请空中段（续时不重复清场）
-    if (primitive === 'fly' && this.left('fly') <= 0) {
-      this.world.startFlight(left, typeof params['heightM'] === 'number' ? (params['heightM'] as number) : undefined);
+    // 飞行第一次到手：开空中内容；飞行中续时：把金币带/云团延展到新的终点
+    if (primitive === 'fly') {
+      if (this.left('fly') <= 0) {
+        this.world.startFlight(left, typeof params['heightM'] === 'number' ? (params['heightM'] as number) : undefined);
+      } else {
+        this.world.extendFlight(left);
+      }
     }
 
     const existing = this.slots.find(s => s.primitive === primitive);

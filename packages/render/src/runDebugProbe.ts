@@ -1,7 +1,8 @@
 /**
  * ?debug 自动化探针（docs/08 §2 的浏览器侧对拍入口）
  * 挂到 globalThis.__trRun：state 给逐帧数值快照，probe 给只读前瞻（近处障碍/道具箱/各车道金币）。
- * 只在 URL 带 ?debug 时安装，正式运行不产生任何全局变量。
+ * 只在 URL 带 ?debug 时安装，正式运行不产生任何全局变量；局结束时由 runnerScene.dispose 调用
+ * uninstallRunProbe() 卸载，避免 __trRun 跨局残留。
  */
 import type { RunnerSim } from '@tr/core/sim/runnerSim.js';
 import type { createBurstPool } from './vfxBurst.js';
@@ -55,4 +56,9 @@ export function installRunProbe(
       };
     },
   };
+}
+
+/** 卸载探针：场景 dispose 时必须调用，否则 __trRun 会跨局存活并指向已销毁的 sim（审计 T9） */
+export function uninstallRunProbe(): void {
+  delete (globalThis as Record<string, unknown>).__trRun;
 }

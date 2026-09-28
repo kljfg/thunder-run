@@ -5,7 +5,8 @@
  */
 import type { FxState } from '../effects/buffEngine.js';
 import { PENDING_STEPS, type RunnerState } from './simTypes.js';
-import type { TrackGen } from './trackGen.js';
+import { clearLandingPath } from './landing.js';
+import type { ObstacleEntity, TrackGen } from './trackGen.js';
 
 /** game.json runner 段中被运动学使用的键 */
 export interface MovementParams {
@@ -36,6 +37,7 @@ export class Movement {
     private readonly P: MovementParams,
     private readonly fly: FlightShape,
     private readonly gen: TrackGen,
+    private readonly obstacles: ObstacleEntity[],
   ) {}
 
   /** ↑/空格：滑行中按跳=起身直接跳；空中按跳=进缓冲等落地 */
@@ -76,10 +78,17 @@ export class Movement {
     s.x += Math.sign(dx) * Math.min(Math.abs(dx), laneSpeed * dt);
   }
 
+  /** 飞行/滑翔期间缓冲同样递减（不执行）：避免进飞行前留下的跳/铲缓冲落地后自动触发 */
+  private decayPending() {
+    if (this.pendingJump > 0) this.pendingJump--;
+    if (this.pendingSlide > 0) this.pendingSlide--;
+  }
+
   /** 垂直：三档 —— 飞行悬停 / 滑翔降落 / 地面跳跃滑铲 */
   advanceVertical(s: RunnerState, fx: FxState, dt: number) {
     if (fx.flyT > 0) {
       this.flyWasActive = true;
+      this.decayPending();
       s.vy = 0;
       s.y += (this.fly.heightM - s.y) * Math.min(1, dt * RISE_LERP); // 平滑升至飞行高度（不高，可俯瞰地面）
       if (s.sliding) this.cancelSlide(s);
@@ -90,11 +99,12 @@ export class Movement {
       if (s.y > AIRBORNE_Y) s.gliding = true; // 燃料耗尽 → 进入滑翔降落
     }
     if (s.gliding) {
+      this.decayPending();
       s.y -= (this.fly.heightM / this.fly.glideS) * dt;              // 匀速滑翔下滑
-      if (s.y <= 0) {
-        s.y = 0; s.gliding = false;
-        this.gen.closeSky(s.distance + 30); // 落地即恢复地面内容生成，不留长空窗（30m 缓冲）
-      }
+      const landed = s.y <= 0;
+      if (landed) { s.y = 0; s.gliding = false; }
+      // 着陆安全：清「剩余下滑路径」；落地帧清净空缓冲（用户反馈：飞行结束直接摔死）
+      clearLandingPath(this.gen, this.obstacles, s, this.fly.heightM / this.fly.glideS, (s.distance - s.prevDistance) / dt, landed);
       return;
     }
     if (this.pendingJump > 0) { this.pendingJump--; if (s.y <= 0) { this.jump(s, fx); this.pendingJump = 0; } }

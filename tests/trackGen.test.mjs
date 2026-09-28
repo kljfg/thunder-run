@@ -17,7 +17,7 @@ const root = join(fileURLToPath(import.meta.url), '..', '..');
 const NAMES = ['game', 'characters', 'skills', 'items', 'obstacles', 'themes', 'events', 'economy'];
 const content = Object.fromEntries(NAMES.map(n => [n, JSON.parse(readFileSync(join(root, 'config', `${n}.json`), 'utf8'))]));
 
-test('高难度封路分布：by≥3 时单道 80% / 双道 20%，三道封堵永不出现', () => {
+test('高难度封路分布：by≥3 时单道约 80% / 双道约 20%（只计 full/vehicle/moving），三道封堵永不出现', () => {
   const gen = new TrackGen(content, new RunRng(2026));
   const hist = { 1: 0, 2: 0, 3: 0 };
   for (let i = 0; i < 4000; i++) {
@@ -26,6 +26,7 @@ test('高难度封路分布：by≥3 时单道 80% / 双道 20%，三道封堵�
   }
   assert.equal(hist[3], 0, '出现三车道封堵');
   const total = hist[1] + hist[2];
+  // 「不连续同模板」会让少数 want=2 抽次回落到单道模板（约 +3pp），80/20 的 ±6pp 容差仍覆盖
   assert.ok(Math.abs(hist[1] / total * 100 - 80) < 6, `单道 ${hist[1]} 双道 ${hist[2]} 偏离 80/20`);
 });
 

@@ -14,13 +14,19 @@ const OBS_MAX = 40, PICKUP_MAX = 8, CLOUD_MAX = 12;
 const OBS_NEAR = 10, OBS_FAR = -140, PICKUP_NEAR = 8, PICKUP_FAR = -320, CLOUD_NEAR = 12, CLOUD_FAR = -140;
 /** 高杆横杆下沿（与 core/sim 的 BAR_BOTTOM 对应：杆体画在 1.2m 以上，下方留钻的空间） */
 const BAR_LOW_Y = 1.2;
-/** 穿云判定：横向距离阈值与冲散动画时长 */
-const CLOUD_HIT_X = 1.9, CLOUD_SCATTER_T = 0.7;
+/** 高杆横杆的可见透明度：半透明才不挡视线（审计 T3 蹲杆挡视线） */
+const GATE_OPACITY = 0.4;
+/** low 障碍可视高度系数：与 core 判定口径对齐（collision.ts：s.y < o.h*0.75 判中），穿模观感消除 */
+const LOW_VISUAL_H = 0.75;
+/** hazard 薄片只是核心线，另叠 0.35m 高电弧光带，与「要跳 0.35m」的判定口径对齐 */
+const HAZARD_BAND_H = 0.35;
+/** 穿云判定：横向距离阈值与冲散动画时长（越宽越容易吃到穿云反馈；动画更快更明显） */
+const CLOUD_HIT_X = 2.6, CLOUD_SCATTER_T = 0.45;
 
 export function createObstacleLayer(scene: THREE.Scene, laneWidth: number) {
   const boxGeo = new THREE.BoxGeometry(1, 1, 1);
   const postMat = new THREE.MeshStandardMaterial({ color: 0x8a93a8, roughness: 0.5, metalness: 0.3 });
-  interface ObsUnit { bar: THREE.Mesh; posts: THREE.Mesh[] }
+  interface ObsUnit { bar: THREE.Mesh; posts: THREE.Mesh[]; band: THREE.Mesh }
   const units: ObsUnit[] = [];
   for (let i = 0; i < OBS_MAX; i++) {
     const bar = new THREE.Mesh(boxGeo, new THREE.MeshStandardMaterial({ roughness: 0.6 }));
@@ -30,7 +36,12 @@ export function createObstacleLayer(scene: THREE.Scene, laneWidth: number) {
       const p = new THREE.Mesh(boxGeo, postMat); // 支撑柱：让「钻杆」可读性更强
       p.visible = false; scene.add(p); posts.push(p);
     }
-    units.push({ bar, posts });
+    // hazard 电弧光带：加色混合的半透明薄盒，提示实际跳跃高度（0.35m）
+    const band = new THREE.Mesh(boxGeo, new THREE.MeshBasicMaterial({
+      color: 0xb48cff, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false,
+    }));
+    band.visible = false; scene.add(band);
+    units.push({ bar, posts, band });
   }
 
   return {
@@ -47,8 +58,14 @@ export function createObstacleLayer(scene: THREE.Scene, laneWidth: number) {
         mat.color.setHex(OBS_COLOR[o.cls] ?? 0xd9a24a);
         mat.emissive.setHex(o.cls === 'hazard' ? 0x7a3fd9 : 0x000000);
         mat.roughness = 0.6;
+        // 高杆横杆（obs_gate_low）半透明化：下方的金币与障碍要能透出来，只留立柱提示轮廓
+        mat.transparent = o.cls === 'high';
+        mat.opacity = o.cls === 'high' ? GATE_OPACITY : 1;
+        mat.depthWrite = o.cls !== 'high';
         let sx = o.w, sy = o.h, sz = o.d, py = o.h / 2;
         if (o.cls === 'high') { sy = Math.max(0.5, o.h - BAR_LOW_Y); py = BAR_LOW_Y + sy / 2; } // 顶部横杆，下方可钻
+        // low：可视高度按判定口径画到 h*0.75（碰撞盒仍为 o.h，见 core/sim collision.ts）
+        if (o.cls === 'low') { sy = o.h * LOW_VISUAL_H; py = sy / 2; }
         if (o.cls === 'hazard') { sy = 0.06; py = 0.03; }
         if (o.cls === 'moving') { sx = sy = sz = 1.1; py = 1.0; }
         m.scale.set(sx, sy, sz);
@@ -56,6 +73,13 @@ export function createObstacleLayer(scene: THREE.Scene, laneWidth: number) {
           ? o.lane * laneWidth + Math.sin(t * Math.PI * 2 / (o.swing?.periodS ?? 3.2)) * (o.swing?.ampM ?? 0) * 0.5
           : o.lane * laneWidth;
         m.position.set(ox, py, z);
+        const band = u.band;
+        band.visible = o.cls === 'hazard';
+        if (band.visible) { // 电弧光带：0.35m 高，缓慢闪烁提示可跳高度
+          band.scale.set(o.w, HAZARD_BAND_H, o.d);
+          band.position.set(ox, HAZARD_BAND_H / 2, z);
+          (band.material as THREE.MeshBasicMaterial).opacity = 0.3 + 0.12 * Math.sin(t * 8 + ox * 1.7);
+        }
         for (let pi = 0; pi < 2; pi++) { // 高杆支撑柱：立在横杆两端，从地面顶到杆顶
           const post = u.posts[pi];
           post.visible = o.cls === 'high';
@@ -67,6 +91,7 @@ export function createObstacleLayer(scene: THREE.Scene, laneWidth: number) {
       }
       for (; i < OBS_MAX; i++) {
         units[i].bar.visible = false;
+        units[i].band.visible = false;
         for (const p of units[i].posts) p.visible = false;
       }
     },
@@ -103,7 +128,7 @@ export function createPickupLayer(scene: THREE.Scene, laneWidth: number) {
   };
 }
 
-/** 云团层：三球低多边形云；被角色穿过时回调 onPass 触发爆点，并播放 0.7 秒冲散淡出 */
+/** 云团层：三球低多边形云；被角色穿过时回调 onPass 触发爆点，并播放约 0.45 秒冲散淡出 */
 export function createCloudLayer(scene: THREE.Scene) {
   const mat0 = new THREE.MeshStandardMaterial({ color: 0xe8eef8, roughness: 1, transparent: true, opacity: 0.92 });
   interface CloudUnit { g: THREE.Group; mats: THREE.MeshStandardMaterial[] }
@@ -139,14 +164,16 @@ export function createCloudLayer(scene: THREE.Scene) {
         u.g.position.set(cl.x, cl.y, z);
         if (sc !== undefined) {
           const k = Math.min((t - sc) / CLOUD_SCATTER_T, 1);
-          u.g.scale.setScalar(1 + k * 1.6);
-          for (const m of u.mats) m.opacity = 0.92 * (1 - k);
+          u.g.scale.setScalar(1 + k * 2.4);                 // 更明显地炸开
+          for (const m of u.mats) m.opacity = 0.92 * (1 - k) * (1 - k); // 二次曲线淡出，前段更快
         } else {
           u.g.scale.setScalar(1);
           for (const m of u.mats) m.opacity = 0.92;
         }
       }
       for (; i < CLOUD_MAX; i++) units[i].g.visible = false;
+      // 云已回收（身后超过近视野）即清理冲散记录，避免 scattered 只增不减（审计 T4）
+      for (const wz of scattered.keys()) if (dist - wz > CLOUD_NEAR) scattered.delete(wz);
     },
   };
 }

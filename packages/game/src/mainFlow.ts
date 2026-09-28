@@ -8,6 +8,7 @@
 import { loadAllConfig } from '@tr/core/config/configLoader.js';
 import type { FileSource } from '@tr/core/config/configLoader.js';
 import type { GameContent } from '@tr/core/config/configTypes.js';
+import { buildLoadout } from '@tr/core/sim/character.js';
 import { RunnerSim } from '@tr/core/sim/runnerSim.js';
 import { createSceneMachine } from '@tr/core/scene/sceneMachine.js';
 import type { SceneName } from '@tr/core/scene/sceneMachine.js';
@@ -16,7 +17,10 @@ import { createRunnerScene } from '@tr/render/runnerScene.js';
 import type { PlatformAdapter } from '@tr/platform/platformAdapter.js';
 import type { GameViews, RunSummary } from './views.js';
 
-export const BEST_KEY = 'thunderrun:b…st';
+/** 历史最佳分存储键（v2 修正键；旧版笔误键含真省略号 U+2026，见 LEGACY_BEST_KEY） */
+export const BEST_KEY = 'thunderrun:best';
+/** 旧版笔误键 'thunderrun:b…st'：bestScore() 读取时一次性迁移，避免旧成绩静默丢失 */
+const LEGACY_BEST_KEY = 'thunderrun:b\u2026st';
 export const CHAR_KEY = 'thunderrun:character';
 export const DEFAULT_CHAR = 'char_volt';
 
@@ -44,7 +48,26 @@ export function createGameFlow(deps: GameFlowDeps): GameFlow {
   let hud: ReturnType<GameViews['mountHud']> | null = null;
   let lastSeed = 0;
 
-  const bestScore = () => Number(adapter.storage.get(BEST_KEY) ?? 0);
+  /**
+   * 历史最佳分（v2 修正）：
+   * - 修正键存在 → 解析；脏值（非有限数/非正数）按 0，不把 NaN 带进分数比较；
+   * - 修正键缺失且旧笔误键存在 → 一次性迁移：旧值校验通过才写入修正键，随后删旧键；
+   * - 两边都没有 / 旧值脏 → 0。写入路径见 result.onEnter（严格 > 才落盘，平纪录不覆盖好值）。
+   */
+  const bestScore = (): number => {
+    const raw = adapter.storage.get(BEST_KEY);
+    if (raw !== null) {
+      const n = Number(raw);
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    }
+    const legacy = adapter.storage.get(LEGACY_BEST_KEY);
+    if (legacy === null) return 0;
+    const n = Number(legacy);
+    adapter.storage.remove(LEGACY_BEST_KEY);
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    adapter.storage.set(BEST_KEY, String(n));
+    return n;
+  };
   /** 上次选的角色（本机记忆；账号级保存在 S9 接 extras.cloud 后端） */
   let charId = adapter.storage.get(CHAR_KEY) ?? DEFAULT_CHAR;
 
@@ -80,7 +103,9 @@ export function createGameFlow(deps: GameFlowDeps): GameFlow {
     },
     result: {
       onEnter: ctx => {
-        const summary = ctx as RunSummary;
+        // 视图要显示角色名而非内部 id（char_volt → 小电）：查 characters 配置补 charName（content 可空）
+        const summary: RunSummary = { ...(ctx as RunSummary) };
+        if (content && summary.charId) summary.charName = buildLoadout(content, summary.charId).name;
         const best = bestScore();
         if (summary.score > best) adapter.storage.set(BEST_KEY, String(summary.score));
         views.renderResult(summary, best, {

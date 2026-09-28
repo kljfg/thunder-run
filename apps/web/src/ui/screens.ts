@@ -192,10 +192,12 @@ export function createRunHud(): { el: HTMLElement; update(h: HudData): void } {
 }
 
 // ---------------- P6 结算页 ----------------
-export interface RunSummary { distance: number; coins: number; nearMiss: number; hits: number; score: number; t: number; casts?: number; charId?: string }
+/** 与 packages/game/src/views.ts 的 RunSummary 一致；charName 由 mainFlow 写入 */
+export interface RunSummary { distance: number; coins: number; nearMiss: number; hits: number; score: number; t: number; casts?: number; charId?: string; charName?: string }
 
 export function renderResult(summary: RunSummary, best: number, actions: { onRetry(): void; onMenu(): void }) {
-  const isNew = summary.score >= best && summary.score > 0;
+  const isNew = summary.score > best && summary.score > 0; // 同分不记新纪录（v2）
+  const charText = summary.charName || summary.charId; // 角色名（如「小电」）；无名字时用 id
   const row = (label: string, val: string) => el('div', 'result-row', [el('span', '', label), el('b', '', val)]);
   const retry = el('button', 'btn btn-primary btn-big', '再跑一次');
   retry.addEventListener('click', actions.onRetry);
@@ -209,7 +211,7 @@ export function renderResult(summary: RunSummary, best: number, actions: { onRet
       row('金币', String(summary.coins)),
       row('惊险擦身', `${summary.nearMiss} 次`),
       row('受击', `${summary.hits} 次`),
-      row('技能释放', `${summary.casts ?? 0} 次${summary.charId ? ' · ' + summary.charId : ''}`),
+      row('技能释放', `${summary.casts ?? 0} 次${charText ? ' · ' + charText : ''}`),
       row('历史最佳', String(Math.max(best, summary.score).toLocaleString())),
       el('div', 'btn-row', [retry, menu]),
     ]),

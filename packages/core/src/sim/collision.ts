@@ -18,11 +18,20 @@ export function relZ(o: ObstacleEntity, distance: number): number {
   return distance - o.worldZ;
 }
 
-/** 障碍中心 x（pendulum 类随时间横摆，摆幅取一半见 obstacles.json swing.ampM） */
+/** 障碍中心 x（pendulum 类随时间横摆，摆幅取一半见 obstacles.json swing.ampM）。
+ *  防呆：swing 字段非法（NaN/非正周期）或角色时间异常时按车道中心处理，绝不返回 NaN。 */
 export function obstacleX(o: ObstacleEntity, t: number, laneWidth: number): number {
-  let x = o.lane * laneWidth;
-  if (o.swing) x += Math.sin(t * Math.PI * 2 / o.swing.periodS) * o.swing.ampM * 0.5;
-  return x;
+  const center = o.lane * laneWidth;
+  const sw = o.swing;
+  if (sw) {
+    const amp = Number.isFinite(sw.ampM) ? sw.ampM : 0;
+    const period = Number.isFinite(sw.periodS) && sw.periodS > 0 ? sw.periodS : 0;
+    if (period > 0) {
+      const x = center + Math.sin(t * Math.PI * 2 / period) * amp * 0.5;
+      return Number.isFinite(x) ? x : center;
+    }
+  }
+  return Number.isFinite(center) ? center : 0;
 }
 
 /** 角色与障碍是否处于同一深度层 */
@@ -30,9 +39,10 @@ export function inDepthWindow(o: ObstacleEntity, z: number): boolean {
   return z >= -o.d / 2 - DEPTH_SLACK && z <= o.d / 2 + DEPTH_SLACK;
 }
 
-/** 横向间隙：>0 表示没压上，越小越险 */
+/** 横向间隙：>0 表示没压上，越小越险。几何量非有限（脏数据）时返回 +∞，按「未接触」处理。 */
 export function lateralGap(o: ObstacleEntity, s: RunnerState, laneWidth: number): number {
-  return Math.abs(obstacleX(o, s.t, laneWidth) - s.x) - (o.w + HIT_BOX_W) / 2;
+  const gap = Math.abs(obstacleX(o, s.t, laneWidth) - s.x) - (o.w + HIT_BOX_W) / 2;
+  return Number.isFinite(gap) ? gap : Number.POSITIVE_INFINITY;
 }
 
 /** 是否算一次惊险擦身（掠过但几乎贴上） */

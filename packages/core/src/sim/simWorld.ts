@@ -6,7 +6,7 @@
  */
 import type { EffectWorld } from '../effects/buffEngine.js';
 import type { CloudEntity, CoinEntity, ObstacleEntity, PickupEntity, TrackGen } from './trackGen.js';
-import type { RunnerState, SimEvent } from './simTypes.js';
+import { FLY_SPEED_CAP, type RunnerState, type SimEvent } from './simTypes.js';
 
 export interface FlightParams { heightM: number; speedMul: number; glideSpeedMul: number; glideS: number }
 
@@ -27,14 +27,16 @@ export interface SimWorldDeps {
   onFlightStart(): void;
 }
 
-/** 空中段长度估算系数：飞行期实际巡航速度 ≈ 30 m/s（2.5 × 地面基础速），再加滑翔距离 */
-const SKY_METERS_PER_SECOND = 30;
+/** 空中内容铺设速度：取飞行巡航上限（实际飞行速度∈[base×2.5, 34]），再叠滑翔尾段 */
+const SKY_METERS_PER_SECOND = FLY_SPEED_CAP;
 const SKY_GLIDE_TAIL_M = 70;
-/** 空中段起点对障碍的向后清扫余量（米） */
-const SKY_CLEAR_SLACK_M = 4;
+/** 起飞窄带：同车道前方清障长度与向后余量（米）。缓升到最高障碍顶 2.6m 约需 8m 行程，12m 留裕量 */
+const TAKEOFF_CLEAR_M = 12, TAKEOFF_CLEAR_BACK_M = 2;
 
 export function createSimWorld(d: SimWorldDeps): EffectWorld {
   let coinChainSeq = 0; // 奖励技金币排的链号，只需本局唯一
+  /** 金币带/云团已铺到的世界 z（续飞时从这里往后补，避免重叠与断档） */
+  let skyContentTo = 0;
   return {
     advance: (distanceM: number) => { d.state.distance += Math.max(0, distanceM); },
 
@@ -83,17 +85,18 @@ export function createSimWorld(d: SimWorldDeps): EffectWorld {
       const height = heightM ?? d.fly.heightM;
       const from = s.distance + 8;
       const to = s.distance + durationS * SKY_METERS_PER_SECOND + SKY_GLIDE_TAIL_M;
-      d.gen.openSky(from, to);
-      // 空中段内不能有地面内容：清掉已生成的障碍与道具箱（swap-pop 保序无关）
-      for (let i = d.obstacles.length - 1; i >= 0; i--) {
-        const o = d.obstacles[i];
-        if (o.worldZ > from - SKY_CLEAR_SLACK_M && o.worldZ < to) { d.obstacles[i] = d.obstacles[d.obstacles.length - 1]; d.obstacles.pop(); }
-      }
-      for (let i = d.pickups.length - 1; i >= 0; i--) {
-        const p = d.pickups[i];
-        if (p.worldZ > from - SKY_CLEAR_SLACK_M && p.worldZ < to) { d.pickups[i] = d.pickups[d.pickups.length - 1]; d.pickups.pop(); }
-      }
+      // 地面内容整体不清场、不中断：飞行从上方掠过，地面障碍照常保留（可俯瞰）；着陆安全另由滑翔清道保证。
+      // 唯一例外：起飞窄带——同车道前方 12m 内的障碍清除，避免缓升阶段身体穿进障碍模型。
       d.gen.spawnSky(from, to, height, d.coins, d.clouds);
+      d.gen.clearObstacles(d.obstacles, s.distance - TAKEOFF_CLEAR_BACK_M, s.distance + TAKEOFF_CLEAR_M, s.lane);
+      skyContentTo = to;
+    },
+
+    extendFlight: (durationS) => {
+      const to = d.state.distance + durationS * SKY_METERS_PER_SECOND + SKY_GLIDE_TAIL_M;
+      if (to <= skyContentTo + 8) return; // 续时没有把终点推远，无需补铺
+      d.gen.spawnSky(skyContentTo, to, d.fly.heightM, d.coins, d.clouds);
+      skyContentTo = to;
     },
   };
 }

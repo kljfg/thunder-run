@@ -179,5 +179,7 @@ test('计分公式：score = 距离×10 + 金币×5 + 近失×25', () => {
   const sim = new RunnerSim(content, hashSeed('score'));
   for (let i = 0; i < 1200 && sim.state.alive; i++) sim.step();
   const s = sim.summary();
-  assert.equal(s.score, Math.floor(s.distance) * 10 + s.coins * 5 + s.nearMiss * 25);
+  // 死亡帧不结算（core-fix #5）：分数停在死亡帧开始时的距离（prevDistance），而非死亡帧末的距离
+  const scoredDistance = sim.state.alive ? sim.state.distance : sim.state.prevDistance;
+  assert.equal(s.score, Math.floor(scoredDistance) * 10 + s.coins * 5 + s.nearMiss * 25);
 });
