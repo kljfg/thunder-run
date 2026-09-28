@@ -9,6 +9,7 @@
     { "path": "packages/game" },
     { "path": "packages/platform-web" },
     { "path": "packages/platform-wx" },
+    { "path": "packages/telemetry" },
     { "path": "apps/web" },
     { "path": "apps/wx" }
   ]
