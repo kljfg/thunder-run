@@ -256,6 +256,44 @@ docs/wx-minigame-redesign.md §3.5（目录结构与分包设计）、spike/wx-t
 汇报：AudioBackend 契约、挂点清单、wx TODO 接线点、给内容侧的音频资源需求单。
 ```
 
+### S20 · 整合接线（波次3.5 · 正式派发版，S5/S6/S16b/S17 全部已合入）
+
+```text
+你负责 雷霆酷跑 的整合接线（framework-architecture §6 清单），分支 feat/s20-integration，基于 origin/dev。
+这是「接线专属」短任务：不做新功能、不改契约签名（唯一例外见任务 1 的加法式注入口）、不动 config 玩法段。
+开工必读：AGENTS.md、CONTRIBUTING.md、docs/framework-architecture.md §5-§7（S5 评审记录/整合清单/决策点）、
+docs/telemetry-wiring.md（S16b 逐点接线说明 + §7 的 16 项偏差清单）、
+docs/audio-events.md（S17 挂点表：§0 引擎构建、§1 局内事件、§2 onInput、§3 场景切换、§4 可见性、§6 wx TODO、§7 iOS 解锁）、
+packages/game/src/ui/host.ts + apps/web/src/uiShell.ts（S5 现状：两块 canvas / 两个 WebGLRenderer）、
+packages/render/src/runnerScene.ts（L68 renderer 自建点）、packages/platform-wx/src/audio.ts 头部 TODO、
+packages/telemetry/src/wxChannel.ts 头部 TODO。
+
+文件所有权：
+- 你拥有：apps/web/src/**、apps/wx/src/**、packages/game/src/**、packages/platform-wx/src/**（新增 telemetry.ts + audio 注册）、
+  packages/render/src/runnerScene.ts（仅增 renderer 注入口）、config/game.json 技术段核对、tests/ 接线用例。
+- 禁碰：packages/core（确定性 sim 有 golden 护航）、packages/ui 契约（缺陷可修，改 API 先汇报）、tools/、.github/。
+
+任务（按优先级）：
+1. **UI 与主场景单 renderer 两 pass 合并**（S5 遗留，wx 侧阻塞项）：packages/render 增 renderer/canvas 注入口
+   （加法式：不传则维持现自建行为，向后兼容），runnerScene 用注入的 renderer；apps/web 撤掉第二块 UI canvas，
+   UiHost 的 OrthoOverlay 变成主 renderer 的第二个 pass（autoClear=false，UI 后画），帧循环收敛为一条 raf；
+   最终签名写回 framework-architecture §3 契约注册表。
+2. telemetry 接线：按 docs/telemetry-wiring.md §2.1-§2.4 接 markBoot/frameTime/memory/configSource/unhandledError
+   （apps/web/bootstrap、mainFlow.boot、run 生命周期、runnerScene），?debug 探针并入统一通道（spec §4.6）。
+3. audio 接线：按 docs/audio-events.md §0-§5 在 apps 入口装配 AudioEngine，局内事件/操作/场景切换/UI 交互音挂点接完，
+   web 侧走 §7 的 iOS 解锁链路。
+4. platform-wx 注册：新增 packages/platform-wx/src/telemetry.ts（wxChannel TODO 指定位置）+ audio 后端注册
+   （audio.ts 头部两处 TODO）；apps/wx 装配同一套 packages/game 主流程 + overlay views（S5 起两端同源）。
+5. config 技术段核对：params.ui 与 params.telemetry 共存 + schema/configValidator 一致；audio 现无 config 段
+   （音量走 storage thunderrun:audio:*），若要入配置段先开 issue 交协调者裁决。
+6. 全量回归：npm run check（≥437 例）+ web 壳全流程手测 + wx devtools 导入 apps/wx/dist 完整玩一局
+   （UI/音频/遥测在 wx 侧至少不报错，实时日志能看到 boot/frameTime 打点）。
+
+验收：npm run check 全绿；web 端 DevTools 确认只有一个 WebGL 上下文（单 canvas 单 renderer）；
+wx devtools 可完整玩一局；两端页面/音频/遥测行为一致（差异只在注入）。
+汇报：实际接线落点 vs 文档偏差、renderer 注入口最终签名、wx 侧遗留问题清单、给 S7 的性能观测点。
+```
+
 ### S7 · 真机性能验证 + 降级预案（波次4，M6 验收）
 
 ```text
@@ -318,6 +356,37 @@ docs/wx-minigame-redesign.md §3.5（目录结构与分包设计）、spike/wx-t
 
 验收：node tools/check.mjs 全绿；体验版真机演示：登录→刷分→重启换设备登录→榜单可见。
 汇报：各子项状态、云环境资源用量初值、审核材料缺口（自审报告/隐私接口声明）。
+```
+
+### S19b · UI 快照 + perf bench（波次4 · 正式派发版，依赖 S4/S6 已就绪）
+
+```text
+你负责 雷霆酷跑 测试基建 b 段（framework-roadmap §3 S19b），分支 feat/s19b-bench，基于 origin/dev。
+开工必读：AGENTS.md、CONTRIBUTING.md、packages/ui/API.md、apps/web/src/uiDemo.ts + uiDemoView.ts
+（?ui=demo 与 __trUiDemo 探针）、packages/game/src/ui/*（S5 五页面，快照对象）、
+tools/replay/（S19a 重放与 golden 基建）、packages/telemetry/src/buckets.ts（帧分桶常量，直接复用不要另写）、
+docs/framework-architecture.md §7（S19b 决策点由你提案）。
+
+文件所有权（纯新增纪律）：
+- 你拥有：tools/uisnap/**、tools/bench/**（各自带 package.json，不改根 package.json 依赖）、
+  tests/uisnap*.test.mjs、tests/bench*.test.mjs、tests/golden/（仅飞行覆盖那条新增）、
+  .github/workflows/ci.yml（新增 job）、docs/ui-snapshot.md、docs/perf-bench.md。
+- 禁碰：packages/**（发现缺陷开 issue，不自己改）、apps/**、config/**。
+
+任务：
+1. UI 快照：离屏渲染 S5 五页面 + ?ui=demo → PNG 基线落 tests/uisnap/，像素 diff 阈值可配，
+   更新必须显式 --update（同 golden 协议，防静默漂移）；node 无 GL 时的路径二选一并写清依赖：
+   headless 浏览器（playwright/puppeteer）或降级为「布局树+文本快照」，ubuntu CI 的降级行为要明确。
+2. perf bench：固定 seed + 脚本化输入（复用 tools/replay/recorder.mjs）跑 node 侧逻辑帧，
+   采集 sim 帧耗时 p50/p95（用 telemetry 的 buckets/percentile），输出 markdown 表落 docs/perf-bench.md；
+   CI 先做软门禁（相对上次基线回归 >20% 只报警不 fail，观察两轮后再定硬线）。
+3. golden 覆盖补飞行链路（framework-architecture §7 已登记）：现 15 组重放均不含飞行道具，
+   飞行/滑翔只有 coreFlightFix 白盒覆盖——新增 ≥1 条「吃到飞行道具」的重放进 golden 基线。
+4. 决策点提案：快照阈值与基线更新流程、bench 进 CI 的门禁线，写进两份 docs 交协调者裁决。
+
+验收：npm run check 全绿（含新增用例）；CI 新 job 双平台行为明确；两份 docs 完成；
+快照连续两次生成字节一致（确定性自证）。
+汇报：产物清单、CI 耗时、门禁线提案、发现的 UI/render 缺陷 issue 列表。
 ```
 
 ## 2.5 波次1.5 提示词（与 S2 并行，只新增文件）
