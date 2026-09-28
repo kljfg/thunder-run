@@ -54,6 +54,7 @@ export class Button extends Widget {
     const env = this.requireEnv();
     const src = this.opts.skin ?? env.theme.skins[this.opts.variant === 'primary' ? 'buttonPrimary' : 'button'];
     this.bg = new NinePatchSprite(src);
+    this.bg.mesh.visible = this.visible;
     env.stage.add(this.bg.mesh);
     this.label.bind(env);
     this.applyVisual();
@@ -114,6 +115,12 @@ export class Button extends Widget {
         if (r.activated) this.opts.onClick?.();
       },
     };
+  }
+
+  override applyVisible(v: boolean): void {
+    super.applyVisible(v);
+    if (this.bg) this.bg.mesh.visible = v;
+    this.label.applyVisible(v && this.label.visible);
   }
 
   dispose(): void {

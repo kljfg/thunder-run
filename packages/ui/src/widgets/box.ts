@@ -54,6 +54,7 @@ export class Box extends Widget {
   bind(env: WidgetEnv): void {
     super.bind(env);
     for (const c of this.children) c.bind(env);
+    this.applyVisible(this.visible); // 子树绑定完成后统一落地初始可见性
   }
 
   protected onBind(): void {
@@ -62,6 +63,7 @@ export class Box extends Widget {
     if (bgOpt == null) return;
     const src = typeof bgOpt === 'string' ? env.theme.skins[bgOpt] : bgOpt;
     this.bg = new NinePatchSprite(src, { color: this.opts.backgroundColor, opacity: this.opts.backgroundOpacity });
+    this.bg.mesh.visible = this.visible; // 构造期置 false 的初始可见性在网格创建时落地
     env.stage.add(this.bg.mesh);
   }
 
@@ -113,6 +115,12 @@ export class Box extends Widget {
 
   /** 滚动容器子类覆盖：给子树叠加裁剪面 */
   protected childCtx(_box: LayoutBox, ctx: PaintCtx): PaintCtx { return ctx; }
+
+  override applyVisible(v: boolean): void {
+    super.applyVisible(v);
+    if (this.bg) this.bg.mesh.visible = v;
+    for (const c of this.children) c.applyVisible(v && c.visible);
+  }
 
   handlers(): NodeHandlers | undefined {
     const onClick = this.opts.onClick;

@@ -5,6 +5,7 @@
   "references": [
     { "path": "../core" },
     { "path": "../platform" },
-    { "path": "../render" }
+    { "path": "../render" },
+    { "path": "../ui" }
   ]
 }

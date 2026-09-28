@@ -3,11 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "两端共用的主流程组装层（redesign §3.5）：配置装配 + 场景状态机 + run 生命周期。视图经 GameViews 接口注入，包内零 DOM/wx。",
+  "description": "两端共用的主流程组装层（redesign §3.5）：配置装配 + 场景状态机 + run 生命周期 + S5 自绘 UI 页面层（src/ui，经 @tr/ui 实现 GameViews）。包内零 DOM/wx。",
   "exports": { "./*": "./dist/*" },
   "dependencies": {
     "@tr/core": "*",
     "@tr/platform": "*",
-    "@tr/render": "*"
+    "@tr/render": "*",
+    "@tr/ui": "*",
+    "three": "0.160.1"
+  },
+  "devDependencies": {
+    "@types/three": "0.160.0"
   }
 }

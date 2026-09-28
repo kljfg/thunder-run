@@ -104,6 +104,11 @@ export class ScrollView extends Widget {
 
   visit(fn: (w: Widget) => void): void { fn(this); this.content.visit(fn); }
 
+  override applyVisible(v: boolean): void {
+    super.applyVisible(v);
+    this.content.applyVisible(v && this.content.visible);
+  }
+
   pixelRatioChanged(): void { this.content.pixelRatioChanged(); }
 
   dispose(): void { this.content.dispose(); }

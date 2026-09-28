@@ -107,9 +107,9 @@ export class UiView {
   /** 一步到位：布局 + 回放 + router 回填（overlay.tick 与 node 测试共用） */
   relayout(): LayoutBox {
     const box = layout(this.buildNode(), { w: this.width, h: this.height } as Size);
+    this.dirty = false; // 先清脏位：applyTree/sync 期间的 invalidate（List 视口估算、Label 两遍收敛）才能存活到下一帧
     this.applyTree(box);
     this.router?.setTree(box);
-    this.dirty = false;
     return box;
   }
 
