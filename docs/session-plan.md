@@ -90,54 +90,55 @@
 这是大搬迁：宁可多花时间，不允许「先跑起来再说」的临时垫片。
 ```
 
-### S3 · 平台层 v2 + wx 骨架 + three 空场景（波次2，M6 前半）
+### S3 · 平台层 v2 实现 + platform-wx + 空场景（波次2 · 正式派发版，已注入 S10/S11 产物）
 
 ```text
-你负责 雷霆酷跑 的平台抽象层重设计与微信小游戏侧骨架（重设计文档 §3.1、§3.2、M6），分支 feat/s3-platform-v2。
-基于已合入的新 workspace 结构（先读 S2 汇报的接口签名约定——如缺，读 packages/platform 现状）。
-前置环境：用户应已装微信开发者工具与 AppID；若缺则本会话完成到「构建产物就绪 + 文档说明如何验证」为止并报告阻塞。
+你负责 雷霆酷跑 平台抽象层 v2 的落地实现与微信小游戏侧骨架（重设计文档 §3.1/§3.2，M6 前半），
+分支 feat/s3-platform-v2，基于 origin/dev。
+开工必读：AGENTS.md、CONTRIBUTING.md（职责边界）、docs/wx-minigame-redesign.md、
+docs/platform-adapter-v2.md + drafts/platform-adapter-v2.ts（S10 契约——实现以此为准，偏离处必须在汇报中给理由）、
+spike/wx-three/README.md（S11 结论：路线 B「自写最小垫片」胜出）+ spike/wx-three/src/shim-min.js、adapter-patch.js。
+环境前置：微信开发者工具 + AppID（没有就用占位 appid，完成到构建产物就绪并在汇报中说明验证步骤）。
 
 任务：
-1. PlatformAdapter v2：去除一切 DOM 类型（HTMLElement/HTMLCanvasElement/window），改为文档 §3.1 的
-   结构化最小接口（CanvasFactory、onInput 合并手势与键盘、storage/fetchJson/frame/visibility/now 保签名）。
-   接口变更要同步 packages/platform-web 实现与全部调用方（render/game），保持编译通过。
-2. 新建 packages/platform-wx：wx 全局类型声明（wx-miniprogram 官方 types 或手写核心面），
-   实现 v2 接口：canvas 工厂（wx.createCanvas 首个=屏幕画布）、wx.onTouch*→Gesture 归一化
-   （复用 webPlatform 的 swipe/doubleTap 判定逻辑，把该纯函数提取到 packages/platform 共享）、
-   storage→wx.setStorageSync、fetchJson→wx.request、frame→requestAnimationFrame（wx 有）、visibility→wx.onShow/Hide。
-   另建 WxExtras 可选注入接口：login/share/cloud 先占位（S9 实装），web 壳给 no-op。
-3. apps/wx 工程壳：game.js 入口（加载 adapter 垫片 → require 主包产物）、game.json（竖屏、分包占位）、
-   project.config.json（appid 用占位串并在汇报中提醒替换）。
-4. three 空场景跑通：用最小 weapp-adapter 垫片策略——优先在 platform-wx 里给 WebGLRenderer 喂最小环境，
-   确实不可行才引入官方 weapp-adapter 并说明原因。目标：开发者工具模拟器里渲染出「三色道+地平线」空场景
-   （从 packages/render 现有 trackVisuals 抽最小复现，不要求完整场景）。
-5. check-import-rules 增加：packages/platform-wx 是唯一允许触碰 wx 全局的包（apps/wx 入口垫片除外）。
+1. 按 S10 契约实现 v2：packages/platform（接口与共享纯函数，含从 webPlatform 提取的 swipe/doubleTap 判定）、
+   packages/platform-web（改造现实现）、全部调用方（packages/render、packages/game、apps/web）同步修正；
+   drafts/platform-adapter-v2.ts 定稿后移入 packages/platform/src（drafts/ 保留指针 README 或删除，汇报说明）。
+2. packages/platform-wx 完整实现 v2 + WxExtras（login/share/cloud/readJson/readBinary 占位，S8/S9 实装）；
+   垫片按 S11 路线 B：以 shim-min.js 为蓝本做正式化（模块化、类型化、可测试），weapp-adapter 仅兜底并说明触发条件。
+3. apps/wx 工程壳：game.js/game.json/project.config.json，接 packages/game 主流程，
+   开发者工具模拟器渲染 S11 同款空场景（三色道+地平线，从 packages/render 抽最小复现）。
+4. tools/check-import-rules.mjs 增禁令：packages/platform-wx 是唯一允许触碰 wx 全局的包（apps/wx 入口垫片除外）。
+5. 边界纪律：不改 config 玩法段数值；不碰 packages/ui（S4 并行中）。
 
-验收：node tools/check.mjs 全绿；apps/web 调试壳功能不回退；开发者工具截图或说明空场景结果；
-低端机风险记录（真机测不了的说明清楚）。
-汇报：v2 接口最终签名、垫片方案结论（自研最小 vs weapp-adapter）、遗留到 S6 的构建问题清单。
+验收：npm run check 全绿；web 壳全流程不回退（启动→登录→菜单→跑一局→结算，?debug 探针正常）；
+开发者工具空场景截图或说明 + 帧率/内存初值。
+汇报：与 S10 契约的偏离点及理由、垫片正式化结论、遗留给 S6（构建管线）的问题清单。
 ```
 
-### S4 · UI 自绘框架内核（波次2，与 S3 并行）
+### S4 · UI 自绘框架（波次2 · 正式派发版，已注入 S12/S13 产物，与 S3 并行）
 
 ```text
-你负责 雷霆酷跑 的自绘 UI 框架内核（重设计文档 §3.3），分支 feat/s4-uikit。
-基于新 workspace 结构，只在 packages/ui 内工作（可加 dev 依赖），不得改 packages/render、platform 相关
-（另一会话在做平台层；你只依赖 three 的场景对象与正交相机，渲染入口设计成「宿主传入 renderer 与叠加时机」的回调式，
-避免直接 import 平台代码）。先读 AGENTS.md + docs/wx-minigame-redesign.md。
+你负责 雷霆酷跑 的自绘 UI 框架（重设计文档 §3.3，M7 前半），分支 feat/s4-uikit，基于 origin/dev。
+开工必读：AGENTS.md、CONTRIBUTING.md（职责边界）、docs/wx-minigame-redesign.md §3.3、
+spike/ui-layout/API.md + spike/ui-layout/src/*（S13 纯逻辑内核：layout/hit/scroll/button/virtualList/router，82 例测试）、
+assets/fonts/README.md + latin/cjk 两张图集与 metrics.json（S12 SDF 规格）。
+并行纪律：S3 正在改 packages/platform* 与调用方——你不得修改这些文件；输入先按现有 v1 接口
+（packages/platform/src/platformAdapter.ts 现状）+ 一层内部适配，汇报中写明 S3 合入后的切换点。
 
 任务：
-1. packages/ui：OrthoOverlay 设计——与主场景共享 WebGLRenderer，独立正交场景 + 独立 render pass；
-   对外 API：createOverlay(host) / mount(view) / unmount() / handleInput(gestureOrHit) / tick(dt)。
-2. 控件：Label、Button、Panel、List(纵向滚动)、ScrollView、九宫格贴片、简易 flex 子集布局引擎（自写，无新运行时依赖）。
-3. 文本：SDF 位图字体方案。tools/gen-font.mjs：输入 ttf（找系统字体，如 微软雅黑 simhei 等可用者）
-   + 字符集清单，输出 图集 png + metrics json；Latin + 游戏文案用到的中文集（扫描现有 screens.ts 与 config 里的中文字符）。
-   Label 用 three mesh+shader 渲染 SDF 图集。
-4. 交互与命中：控件矩形命中测试、按压态、滚动惯性（手感参数进 config/game.json 新 ui 段并同步 schema——注意 §4 的同步链）。
-5. 演示页：apps/web 挂一条 debug 路由（如 ?ui=demo）展示全部控件，供 S5 迁移前验收；node:test 补布局引擎与命中测试用例。
+1. 把 S13 内核搬入 packages/ui/src（保持模块划分与 API.md 契约），spike/ui-layout 删除（避免双源漂移）；
+   其测试全部迁入并接入 npm run check（tests/ 或包内 script 均可）。
+2. 渲染绑定层：OrthoOverlay——与主场景共享 WebGLRenderer、独立正交场景、独立 render pass；
+   对外 API：createOverlay(host)/mount(view)/unmount()/handleInput(evt)/tick(dt)。
+3. SDF 文本：three shader 按 assets/fonts/README.md 的坐标系/scale/spread 约定采样图集，
+   Label 支持中英文混排、换行、对齐；图集加载走 resources 接口（web fetch，wx 侧留 S6 接入点）。
+4. 控件渲染化：Label/Button/Panel/List/ScrollView 绑定 S13 状态机；九宫格贴片；按压态视觉反馈。
+5. ui 手感参数（惯性摩擦/回弹/双击窗口等）进 config/game.json 技术段 ui 节 + schema + configValidator 同步。
+6. 演示页：apps/web 挂 ?ui=demo 展示全部控件与中文渲染，供 S5 迁移前验收。
 
-验收：node tools/check.mjs 全绿；?ui=demo 页面截图或控件清单说明；新单测数量与覆盖点。
-汇报：控件 API 清单（S5 直接照此迁移页面）、字体工具用法、性能注意点。
+验收：npm run check 全绿（含迁移的 82 例）；?ui=demo 截图或控件清单说明；中文字形渲染质量自查。
+汇报：控件 API 终版（S5 迁移依据）、字体渲染参数、与 S3 的耦合点清单（合流时协调者处理）。
 ```
 
 ### S5 · 五页面迁移（波次3）
@@ -342,14 +343,54 @@ apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空
 汇报：schema 要点、降级链决策表、给 S8 的接口预留点。
 ```
 
+### S15 · CI/CD 门禁（波次2，零依赖，可立即）
+
+```text
+你负责 雷霆酷跑 的 CI/CD（docs/framework-roadmap.md §3 S15），分支 feat/s15-ci，基于 origin/dev。
+只新增 .github/ 下文件 + README 顶部 badge 行（README 其余内容不动）。先读 AGENTS.md、CONTRIBUTING.md。
+
+任务：
+1. .github/workflows/ci.yml：on pull_request(base=dev) + push(dev/main)；
+   步骤：npm ci → npm run build → npm install --prefix tools/fontgen → npm test →
+   node tools/validate-config.mjs → node tools/check-import-rules.mjs → npm run build:web；npm 缓存开启。
+2. 矩阵 ubuntu-latest + windows-latest：验证 tools/fontgen 用例在 ubuntu（无中文系统字体）的 skip 行为——
+   若失败而非 skip，优先在 CI 层按平台跳过该测试组；确需改 fontgen 源码要在汇报中说明理由。
+3. 预留 wx-artifact job（注释占位）：S6 落地后接入产物构建 + 主包 4MB 体积门禁 + artifact 上传，写清接入点。
+4. README 加 CI badge（dev 分支）。
+
+验收：push 后 GitHub Actions 在 dev 分支的 run 双平台全绿。
+汇报：run 链接、耗时、fontgen 在 ubuntu 的行为、给 S6 的接入点说明。
+```
+
+### S19a · golden-master 回归 + 输入重放格式（波次2，纯新增，可立即）
+
+```text
+你负责 雷霆酷跑 测试基建 a 段（docs/framework-roadmap.md §3 S19a），分支 feat/s19a-replay，基于 origin/dev。
+必读：AGENTS.md、CONTRIBUTING.md、packages/core/src/sim/runnerSim.ts 公开 API（确定性 sim，同 seed 同输入必同结果）。
+并行纪律：尽量零修改既有文件；确需 core 挂钩子必须做成可选参数的加法式 API，汇报中单独说明。
+
+任务：
+1. docs/replay-format.md：输入重放格式 v1——结构含 version/seed/charId/固定步长/输入事件序列 {frame,type,payload}，
+   事件形状对齐 packages/platform 的 Gesture/onKey 类型；给出示例文件与扩展规则（版本演进策略）。
+2. tools/replay/：runner.mjs（node 无头加载重放文件驱动 RunnerSim，输出结果摘要）、
+   recorder.mjs（程序化生成重放：脚本化输入序列→重放文件）。
+3. golden-master：tools/replay/golden-gen.mjs 以固定 seed 集（≥5 条赛道 × 3 角色）+ 脚本化输入生成
+   tests/golden/*.json（终局分数/金币/距离/事件序列哈希/结算摘要）；tests/golden.test.mjs 逐项对比，
+   失败输出可读 diff 摘要；重新生成必须显式 --update（防静默漂移）。
+4. 有效性自证：临时改一个 sim 物理常量让 golden 变红（截图/输出记录进汇报后还原）。
+
+验收：npm run check 全绿（含新用例）；golden 文件可复现（连续两次生成哈希一致）。
+汇报：格式规范要点、golden 覆盖矩阵、core 加法改动（如有）、给 S18（云复跑防作弊）的复用点。
+```
+
 ## 3. 状态登记板
 
 | 会话 | 任务 | 波次 | 依赖 | 状态 | 分支 | 备注 |
 |------|------|------|------|------|------|------|
 | S1 | 工具小修 | 0 | - | 已合并@4dbd1bc | feat/s1-toolfix | check.mjs ALL PASS，92/92 |
 | S2 | monorepo 搬迁 | 1 | S1(已吸收) | 已合并@7698848 | feat/s2-workspace | check ALL PASS；提交曾误落 s11 分支，已修正指针 |
-| S3 | 平台层 v2+wx 骨架 | 2 | S2✓ | 待派发 | feat/s3-platform-v2 | 派发时注入 S10 规格+S11 路线B结论 |
-| S4 | UI 框架内核 | 2 | S2✓ | 待派发 | feat/s4-uikit | 派发时注入 S12 产物+S13 API.md，与 S3 并行 |
+| S3 | 平台层 v2+wx 骨架 | 2 | S2✓ | 已派发 | feat/s3-platform-v2 | 正式版提示词已注入 S10 规格+S11 路线B |
+| S4 | UI 框架内核 | 2 | S2✓ | 已派发 | feat/s4-uikit | 正式版已注入 S12/S13 产物；禁碰 platform* |
 | S5 | 页面迁移 | 3 | S3,S4 | 待派发 | feat/s5-pages | |
 | S6 | wx 构建管线 | 3 | S3 | 待派发 | feat/s6-wxbuild | 与 S5 并行 |
 | S7 | 真机性能关 | 4 | S5,S6 | 待派发 | feat/s7-perf | 需真机 |
@@ -360,8 +401,8 @@ apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空
 | S12 | SDF 字体工具链 | 1.5 | - | 已合并@a68b68d | feat/s12-sdf-font | assets/fonts 图集+metrics；9/9 用例绿 |
 | S13 | UI 布局纯逻辑内核 | 1.5 | - | 已合并@ce82749 | feat/s13-ui-layout | spike/ui-layout，82 例绿，API.md 为 S4 契约 |
 | S14 | manifest 原型 | 1.5 | - | 已合并@138a074 | feat/s14-manifest | docs/manifest-schema.md + publish-content.mjs，22 例绿 |
-| S15 | CI/CD 门禁 | 2 | - | 待派发 | feat/s15-ci | 零依赖，可立即；见 framework-roadmap §3 |
-| S19a | golden-master+输入重放 | 2 | - | 待派发 | feat/s19a-replay | 纯新增，可立即；S18 地基 |
+| S15 | CI/CD 门禁 | 2 | - | 已派发(本队) | feat/s15-ci | 协调者会话执行 |
+| S19a | golden-master+输入重放 | 2 | - | 已派发(本队) | feat/s19a-replay | S15 完成后接续；S18 地基 |
 | S16 | 遥测/日志框架 | 3 | S3 | 待派发 | feat/s16-telemetry | |
 | S17 | 音频框架 | 3 | S3 | 待派发 | feat/s17-audio | 资源由内容侧投放 |
 | S19b | UI 快照+perf bench | 4 | S4,S6 | 待派发 | feat/s19b-bench | |
