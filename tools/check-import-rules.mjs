@@ -4,7 +4,8 @@
  *   R1 packages/core/**   ：禁止 import 'three'；禁止 window/document/localStorage/fetch/wx.；
  *                           禁止 Math.random（随机必须走 RunRng）
  *   R2 packages/render/** ：禁止 window/document/localStorage/fetch/wx.（three 允许）
- *   R3 packages/(render|ui|game)/** ：禁止 import @tr/platform-web / @tr/platform-wx
+ *   R3 packages/(render|ui|game|telemetry|audio)/** ：禁止 import @tr/platform-web / @tr/platform-wx，
+ *                           并禁 window/document/localStorage/fetch/wx. 全局
  *                           （只有 platform-* 与 apps/* 可触平台实现）
  *   R4 所有包源文件       ：单文件不超过 300 行（docs/10 §4「一个文件一个概念」）
  *   R5 wx 全局（S3 新增） ：packages/platform-wx 是全项目唯一允许触碰 wx 全局的包，
@@ -41,7 +42,10 @@ const WEB_GLOBALS = [
   [/\blocalStorage\b/g, 'R5：platform-wx 禁止 localStorage（用 wx.*StorageSync）'],
 ];
 
-const NO_PLATFORM = ['@tr/render', '@tr/ui', '@tr/game']; // 包目录名：render / ui / game
+/** 平台无关包（禁 DOM/BOM 全局与平台实现包 import）：目录名 = 去掉 '@tr/' 前缀。
+ *  S16b 起补入 telemetry/audio——两包按纪律为纯逻辑（宿主能力一律经 sink/backend 注入），
+ *  此前只被 R5 的 wx 禁令覆盖，window/document/fetch 越界会静默放过。 */
+const NO_PLATFORM = ['@tr/render', '@tr/ui', '@tr/game', '@tr/telemetry', '@tr/audio'];
 
 function* walkTs(dir) {
   for (const name of readdirSync(dir)) {
