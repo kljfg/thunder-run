@@ -76,9 +76,11 @@ export function scanlineFill(contours, x0, y0, width, height) {
     const acc = new Float64Array(width); // 每像素覆盖率累计（0..1）
     for (let s = 0; s < SS; s++) {
       const sy = y0 + py + (s + 0.5) / SS;
+      // 交点必须跨轮廓合并收集：non-zero winding 依赖外轮廓与孔洞轮廓的权重相消，
+      // 逐轮廓独立填充会把孔洞（如 自/回/中 的内腔）一起填实（S12 图集实心块 bug 的根因）。
+      xs.length = 0; ws.length = 0;
       for (const { pts, minY, maxY } of ranges) {
         if (sy < minY || sy > maxY) continue;
-        xs.length = 0; ws.length = 0;
         const n = pts.length;
         for (let i = 0; i < n; i++) {
           const [ax, ay] = pts[i], [bx, by] = pts[(i + 1) % n];
@@ -89,15 +91,15 @@ export function scanlineFill(contours, x0, y0, width, height) {
             ws.push(by > ay ? 1 : -1); // non-zero winding
           }
         }
-        if (!xs.length) continue;
-        // 按 x 排序（携带 winding 权重）
-        const order = xs.map((v, i) => i).sort((p, q) => xs[p] - xs[q]);
-        let wind = 0;
-        for (let k = 0; k < order.length; k++) {
-          const xe = xs[order[k]];
-          if (wind !== 0 && k > 0) fillSpan(acc, xs[order[k - 1]] - x0, xe - x0, 1 / SS);
-          wind += ws[order[k]];
-        }
+      }
+      if (!xs.length) continue;
+      // 按 x 排序（携带 winding 权重）
+      const order = xs.map((v, i) => i).sort((p, q) => xs[p] - xs[q]);
+      let wind = 0;
+      for (let k = 0; k < order.length; k++) {
+        const xe = xs[order[k]];
+        if (wind !== 0 && k > 0) fillSpan(acc, xs[order[k - 1]] - x0, xe - x0, 1 / SS);
+        wind += ws[order[k]];
       }
     }
     const row = alpha.subarray(py * width, (py + 1) * width);
