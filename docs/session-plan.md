@@ -401,7 +401,7 @@ apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空
 | S12 | SDF 字体工具链 | 1.5 | - | 已合并@a68b68d | feat/s12-sdf-font | assets/fonts 图集+metrics；9/9 用例绿 |
 | S13 | UI 布局纯逻辑内核 | 1.5 | - | 已合并@ce82749 | feat/s13-ui-layout | spike/ui-layout，82 例绿，API.md 为 S4 契约 |
 | S14 | manifest 原型 | 1.5 | - | 已合并@138a074 | feat/s14-manifest | docs/manifest-schema.md + publish-content.mjs，22 例绿 |
-| S15 | CI/CD 门禁 | 2 | - | 已派发(本队) | feat/s15-ci | 协调者会话执行 |
+| S15 | CI/CD 门禁 | 2 | - | 已合并(PR#5) | feat/s15-ci | CI 双平台绿（run 36371594917）；issue #3 已关 |
 | S19a | golden-master+输入重放 | 2 | - | 已派发(本队) | feat/s19a-replay | S15 完成后接续；S18 地基 |
 | S16 | 遥测/日志框架 | 3 | S3 | 待派发 | feat/s16-telemetry | |
 | S17 | 音频框架 | 3 | S3 | 待派发 | feat/s17-audio | 资源由内容侧投放 |
