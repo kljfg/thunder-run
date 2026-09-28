@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "占位壳（M7/S4 落地）：自绘 UI 框架（three.js 正交图层 + SDF 文字），替代 apps/web/src/ui/screens.ts 的 DOM 页面。",
+  "description": "自绘 UI 框架（重设计 §3.3，M7/S4）：S13 纯逻辑内核（layout/hit/router/scroll/button/virtualList）+ three 正交渲染层（OrthoOverlay/控件/SDF 文本/九宫格）。禁止 DOM 全局与平台包（check-import-rules 强制）。",
   "exports": { "./*": "./dist/*" },
   "dependencies": {
-    "@tr/core": "*",
-    "@tr/platform": "*"
+    "three": "0.160.1"
+  },
+  "devDependencies": {
+    "@types/three": "0.160.0"
   }
 }

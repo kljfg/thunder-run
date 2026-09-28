@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { layout, InputRouter } from '../dist/index.js'
+import { layout, InputRouter } from '../packages/ui/dist/index.js'
 
 /**
  * 典型场景树：panel(滚动容器) > btn(按钮)，root 包一层。

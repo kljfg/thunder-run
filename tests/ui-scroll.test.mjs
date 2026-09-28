@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { ScrollPhysics, resolveScrollFeel, defaultScrollFeel, estimateVelocity } from '../dist/index.js'
+import { ScrollPhysics, resolveScrollFeel, defaultScrollFeel, estimateVelocity } from '../packages/ui/dist/index.js'
 
 /** 以固定步长推进直到静止，返回步数（上限保护防止测试挂死） */
 function runToRest(p, dt = 1 / 60, maxSteps = 60 * 20) {

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { computeVirtualWindow, contentExtentOf, itemStart, clampOffset } from '../dist/index.js'
+import { computeVirtualWindow, contentExtentOf, itemStart, clampOffset } from '../packages/ui/dist/index.js'
 
 const spec = (over = {}) => ({ itemCount: 100, itemExtent: 40, gap: 0, viewportExtent: 200, overscan: 1, ...over })
 

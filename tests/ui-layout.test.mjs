@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { layout, measureNode } from '../dist/index.js'
+import { layout, measureNode } from '../packages/ui/dist/index.js'
 
 /** 在矩形树中按 id 查找 */
 function find(box, id) {
