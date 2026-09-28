@@ -35,7 +35,7 @@ export function renderBoot(onProgress: (text: string) => void) {
 // ---------------- P2 登录页 ----------------
 export interface LoginActions { onGuest(): void }
 
-export function renderLogin(actions: LoginActions): { showError(msg: string): void } {
+export function renderLogin(actions: LoginActions): { showError(msg: string): void; submit(): void } {
   const user = document.createElement('input');
   user.placeholder = '用户名（4-20 位字母/数字/下划线）';
   user.id = 'in-user';
@@ -56,14 +56,16 @@ export function renderLogin(actions: LoginActions): { showError(msg: string): vo
     if (p.length < 8 || p.length > 32 || !/[A-Za-z]/.test(p) || !/[0-9]/.test(p)) return '密码需 8-32 位且同时包含字母和数字';
     return null;
   }
-  btnLogin.addEventListener('click', () => {
+  /** 登录/注册：回车键与主流程共用入口 */
+  function submit() {
     const msg = validate();
     if (msg) { err.textContent = msg; return; }
     err.textContent = '';
     // M3 前没有后端：把用户名记到本地，直接进主菜单（演示流转）
     localStorage.setItem('thunderrun:lastUser', user.value.trim());
     actions.onGuest();
-  });
+  }
+  btnLogin.addEventListener('click', submit);
   btnGuest.addEventListener('click', () => actions.onGuest());
 
   $('screen').replaceChildren(
@@ -75,7 +77,7 @@ export function renderLogin(actions: LoginActions): { showError(msg: string): vo
       hint,
     ]),
   );
-  return { showError: (m: string) => { err.textContent = m; } };
+  return { showError: (m: string) => { err.textContent = m; }, submit };
 }
 
 // ---------------- P3 主菜单 ----------------

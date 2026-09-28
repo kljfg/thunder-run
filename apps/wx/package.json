@@ -1,0 +1,13 @@
+{
+  "name": "@tr/wx",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "微信小游戏工程壳（S3）：game.js 入口 + 配置壳；dist/ 为构建产物（tools/build-wx.mjs 生成，devtools 导入目录）。",
+  "dependencies": {
+    "@tr/game": "*",
+    "@tr/platform": "*",
+    "@tr/platform-wx": "*",
+    "@tr/render": "*"
+  }
+}

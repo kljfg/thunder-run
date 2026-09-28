@@ -5,8 +5,8 @@
 > 实现仓库。设计与规范的唯一事实源在文档库 `D:\gpt-6\work\酷跑小游戏`（下称 docs 库），本仓库只放代码与可运行配置。
 > 当前进度：**M2 数据驱动接入 4/5**（T2.1 参数外置 · T2.2 效果原语引擎 · T2.3 道具掉落 · T2.4 角色装配与技能）；
 > **M5 工程化切换已完成**（npm workspaces 拆包 `src/` → `packages/* + apps/web`，tsc -b + Vite 构建链，three/tsc 切 npm 依赖，见 `docs/wx-minigame-redesign.md` §2/§4）。
-> 后续：M6 平台层泛化（S3 接 `@tr/platform` v2 接口）→ M7 UI 自绘（`@tr/ui` 现为空壳）→ M8/M9。
-> 已延期/待办：T0.3 微信小游戏壳（随 M6 复活）、T2.5 配置热更新 manifest 客户端（需 CDN/服务端，随 M3 一起做）。
+> 后续：~~M6 平台层泛化~~ **S3 已完成**（`@tr/platform` v2 契约落地 + `@tr/platform-wx` 完整实现 + `apps/wx` 工程壳，three 空场景 60fps 跑通，见 `docs/platform-adapter-v2.md`）→ M7 UI 自绘（`@tr/ui` 现为空壳）→ M8/M9。
+> 已延期/待办：~~T0.3 微信小游戏壳~~（S3 已复活为 `apps/wx`，构建产物 `npm run build:wx`）、T2.5 配置热更新 manifest 客户端（需 CDN/服务端，随 M3 一起做）。
 
 ## 快速开始（小白版）
 
@@ -18,6 +18,7 @@
 | 改了代码后类型/产物重建 | **`编译代码.bat`** | `npm run build`（tsc -b，增量，产物在各包 `dist/`） |
 | 提交前的完整自检 | **`运行测试.bat`** | `npm run check`（编译+单测+配置校验+架构禁令，全绿出 ALL PASS） |
 | 构建可部署的网页包 | — | `npm run build:web`（Vite 产物在 `apps/web/dist`，含拷入的 `config/*.json`；`python tools/serve.py` 可静态起服预览） |
+| 构建微信小游戏包 | — | `npm run build:wx`（`tsc -b` + `tools/build-wx.mjs` → `apps/wx/dist/`，用开发者工具「导入项目」选它，见 `apps/wx/README.md`） |
 
 页面流程：启动页（加载配置）→ 登录页（本地格式校验/游客进入）→ 主菜单（**点卡片选角色**，技能与被动文案来自 config）→ 跑酷局 → 结算页（含技能释放次数）。
 
@@ -45,9 +46,10 @@ thunder-run/
 │   │       ├── collect.ts      金币与道具箱拾取判定
 │   │       ├── simWorld.ts     EffectWorld 实现：瞬时原语/飞行如何改动赛道实体
 │   │       └── trackGen.ts     赛道/金币/道具箱生成
-│   ├── platform/               @tr/platform：PlatformAdapter 接口 v1（docs/02 §4；DOM 类型泄漏，S3 泛化为 v2）
+│   ├── platform/               @tr/platform：PlatformAdapter **v2** 接口（零 DOM/wx 类型，docs/platform-adapter-v2.md）+ 手势归一化共享内核 gestureClassifier.ts
 │   ├── render/                 @tr/render：three.js 场景层（npm 依赖 three@0.160），只读 sim 做表现
-│   │   ├── runnerScene.ts      总装：舞台/相机/固定步长循环/事件→反馈/HUD 推送
+│   │   ├── runnerScene.ts      总装：舞台/相机/固定步长循环/事件→反馈/HUD 推送（v2：onInput 合并 + onResize/onVisibility）
+│   │   ├── emptyScene.ts       空场景（三色道+地平线，M6 验收；两端共用）
 │   │   ├── trackVisuals.ts     道路·车道线·护栏·流动虚线
 │   │   ├── avatarRig.ts        角色本体 + 喷气背包/头盔/护盾挂件与姿态
 │   │   ├── runnerModel.ts      程序化低多边形角色模型（M4 T4.2）
@@ -56,20 +58,23 @@ thunder-run/
 │   │   ├── vfxBurst.ts         拾取爆点粒子池
 │   │   └── runDebugProbe.ts    ?debug 自动化探针（__trRun.state / __trRun.probe）
 │   ├── ui/                     ★ @tr/ui 空壳占位（M7/S4 落地自绘 UI 框架）
-│   ├── platform-web/           @tr/platform-web：webPlatform.ts（调试壳实现，DOM/BOM 唯一入口）
-│   └── platform-wx/            ★ @tr/platform-wx 空壳占位（M6/S3 落地 wx 实现）
+│   ├── game/                   ★ @tr/game：两端共用主流程（views 接口 + mainFlow 场景机 + emptyMain 空场景），零 DOM/wx
+│   ├── platform-web/           @tr/platform-web：webPlatform.ts（调试壳实现，DOM/BOM 唯一入口）+ webExtras.ts（WxExtras 兜底）
+│   └── platform-wx/            @tr/platform-wx：wx 实现（canvas 垫片/触摸/存储/网络/帧循环）+ WxExtras；唯一允许触碰 wx 全局的包
 ├── apps/
-│   └── web/                    @tr/web：开发调试壳（Vite）
-│       ├── index.html          入口页（#screen 容器）
-│       ├── style.css           页面样式
-│       ├── vite.config.ts      Vite 配置（config/ 经 publicDir 挂载到站点根路径）
-│       └── src/
-│           ├── bootstrap.ts    组装入口：适配层+场景机+配置+页面（原 src/game；M6 接口 v2 后提取「两端共用主流程」到 packages/game）
-│           └── ui/screens.ts   启动/登录/主菜单/HUD/结算页（docs/01 §11；M7 由 @tr/ui 替换后删除）
+│   ├── web/                    @tr/web：开发调试壳（Vite）
+│   │   ├── index.html          入口页（#screen 容器）
+│   │   ├── style.css           页面样式
+│   │   ├── vite.config.ts      Vite 配置（config/ 经 publicDir 挂载到站点根路径）
+│   │   └── src/
+│   │       ├── bootstrap.ts    装配入口：createWebPlatform({mount}) + createWebViews + @tr/game 主流程
+│   │       ├── views.ts        GameViews 的 DOM 实现（适配 screens.ts；M7 换 @tr/ui 后删除）
+│   │       └── ui/screens.ts   启动/登录/主菜单/HUD/结算页（docs/01 §11；M7 由 @tr/ui 替换后删除）
+│   └── wx/                     ★ @tr/wx：微信小游戏工程壳（S3）：game.json/project.config.json + src/main.ts；dist/ 为构建产物
 ├── config/                     8 个内容配置（与 docs 库 config/ 同源，改完两边要同步；Vite publicDir 挂载）
 ├── vendor/                     three.js r160 运行时 + 类型（M5 起仅作回滚/离线兜底，构建链已切 npm 依赖）
-├── tools/                      check.mjs 四步聚合 / 禁令脚本 / tsc vendor 兜底 / serve.py 静态兜底
-├── tests/                      node:test 单元测试（92 例，import 各包 dist/ 产物）
+├── tools/                      check.mjs 四步聚合 / 禁令脚本 / build-wx.mjs 小游戏打包 / tsc vendor 兜底 / serve.py 静态兜底
+├── tests/                      node:test 单元测试（182 例，import 各包 dist/ 产物）
 └── <各包>/dist/                编译产物（不入库，tsc -b 生成）
 ```
 
@@ -97,6 +102,6 @@ thunder-run/
 - 加新玩法数值：先加进 `config/game.json`（并同步 schema + docs/03 的参数表），再在 sim 里读取；`tests/configValidator.test.mjs` 会盯住「用了但没写进 schema」的字段。
 - 加新效果原语（[PRIMITIVE]）：`buffEngine.ts` 的 `PRIMITIVES` 加一项 + `recompute()` 或 `castInstant()` 加合并规则 + `schema` 的 primitive enum + docs/03 §4.3 表格 + `tests/effects.test.mjs` 矩阵用例，五处同一 PR 内改完。
 - 加页面：`apps/web/src/ui/screens.ts` 增加渲染函数，`apps/web/src/bootstrap.ts` 场景机注册进入/退出（M7 起页面迁到 `@tr/ui`）。
-- 平台差异：一律扩展 `packages/platform/src/platformAdapter.ts` 接口 + 在 `packages/platform-web/src/webPlatform.ts` 实现，别在业务层写 `window`（M6 起接口去 DOM 类型 + 新增 `@tr/platform-wx`）。
+- 平台差异：一律在 `packages/platform`（v2 接口，零 DOM/wx 类型）加契约，`platform-web` / `platform-wx` 各端实现，别在业务层写 `window`/`wx`。禁令 R5：`wx` 全局只允许 `packages/platform-wx` 触碰（`apps/wx` 入口垫片除外）。
 - 跨包 import 约定：一律 `@tr/<包>/<模块路径>.js`（如 `@tr/core/sim/runnerSim.js`），经各包 `package.json` 的 `"./*": "./dist/*"` 解析；包内仍用相对路径。禁令：`packages/core|render|ui|game` 不得 import `@tr/platform-web` / `@tr/platform-wx` 或触碰 DOM 全局。
 - 自动化验证：URL 加 `?debug` → 控制台 `__trRun.state`（含 `fx` 快照、能量、冷却）与 `__trRun.probe`（前方障碍/道具箱/各车道金币数），`__trSeed()` 给出本局种子用于同赛道复现。

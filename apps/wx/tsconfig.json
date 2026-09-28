@@ -8,10 +8,9 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../../packages/core" },
     { "path": "../../packages/game" },
     { "path": "../../packages/platform" },
-    { "path": "../../packages/platform-web" },
+    { "path": "../../packages/platform-wx" },
     { "path": "../../packages/render" }
   ]
 }

@@ -2,5 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "rootDir": "src", "outDir": "dist" },
   "include": ["src"],
-  "references": [{ "path": "../platform" }]
+  "references": [
+    { "path": "../core" },
+    { "path": "../platform" },
+    { "path": "../render" }
+  ]
 }

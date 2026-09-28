@@ -1,0 +1,8 @@
+{
+  "deviceOrientation": "portrait",
+  "iOSHighPerformance": true,
+  "networkTimeout": {
+    "request": 10000,
+    "downloadFile": 30000
+  }
+}

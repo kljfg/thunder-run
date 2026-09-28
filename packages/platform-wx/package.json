@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "占位壳（M6/S3 落地）：微信小游戏实现（canvas/storage/frame/手势/网络/登录/分享），依赖接口 v2。",
-  "exports": { "./*": "./dist/*" }
+  "description": "微信小游戏实现（PlatformAdapter v2）：canvas 垫片/触摸/存储/网络/帧循环 + WxExtras（login/share/cloud/readJson/readBinary）。全项目唯一允许触碰 wx 全局的包（apps/wx 入口垫片除外）。",
+  "exports": { "./*": "./dist/*" },
+  "dependencies": { "@tr/platform": "*" }
 }

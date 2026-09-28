@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import { STEP_DT } from '@tr/core/sim/simTypes.js';
 import type { RunnerSim } from '@tr/core/sim/runnerSim.js';
 import type { GameContent } from '@tr/core/config/configTypes.js';
-import type { PlatformAdapter } from '@tr/platform/platformAdapter.js';
+import type { GLCanvas, PlatformAdapter, WindowSize } from '@tr/platform/platformAdapter.js';
 import { createAvatar } from './avatarRig.js';
 import { createCoinField } from './coinField.js';
 import { createCloudLayer, createObstacleLayer, createPickupLayer } from './entityLayers.js';
@@ -40,7 +40,7 @@ const BURST_Z = -0.62, CLOUD_BURST_COLOR = 0xdfe9f5;
 const FOG_NEAR = 22, FOG_FAR = 120;
 
 export function createRunnerScene(
-  host: { canvas: HTMLCanvasElement; width: number; height: number; dpr: number },
+  host: { canvas: GLCanvas; size: WindowSize },
   adapter: PlatformAdapter, sim: RunnerSim, content: GameContent, cb: RunCallbacks,
 ) {
   const runner = (content.game.params.runner ?? {}) as Record<string, number>;
@@ -52,13 +52,17 @@ export function createRunnerScene(
   const fx = sim.fx;
 
   // ---------- 舞台 ----------
-  const renderer = new THREE.WebGLRenderer({ canvas: host.canvas, antialias: true });
-  renderer.setPixelRatio(host.dpr);
-  renderer.setSize(host.width, host.height, false);
+  // 全仓唯一 three 接线断言点（S10 §7.6 / D3）：GLCanvas 是结构化去 DOM 类型，
+  // 这里喂回 three 需要的 HTMLCanvasElement 形貌；S11 路线 B 的最小垫片（wx canvas 补
+  // addEventListener/style）即在此处兼容，如与此冲突收敛于此单点。
+  const renderer = new THREE.WebGLRenderer({ canvas: host.canvas as unknown as HTMLCanvasElement, antialias: true });
+  const { width, height, dpr } = host.size;
+  renderer.setPixelRatio(dpr);
+  renderer.setSize(width, height, false);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(sky.baseColor);
   scene.fog = new THREE.Fog(sky.baseColor, FOG_NEAR, FOG_FAR);
-  const camera = new THREE.PerspectiveCamera(FOV_GROUND, host.width / host.height, 0.1, 160);
+  const camera = new THREE.PerspectiveCamera(FOV_GROUND, width / height, 0.1, 160);
   camera.position.set(0, CAM_Y_BASE, CAM_Z);
   camera.lookAt(0, 0, LOOK_AHEAD_Z);
   scene.add(new THREE.HemisphereLight(0x9fb8ff, 0x0c1020, 1.1));
@@ -77,16 +81,18 @@ export function createRunnerScene(
   let chestX = 0, chestY = avatar.chestY;
   const fireAtPlayer = () => bursts.fireAt(chestX, chestY, BURST_Z);
 
-  // ---------- 输入 → sim ----------
-  const offGesture = adapter.onGesture(g => {
-    if (g.type === 'doubleTap') { sim.applyAction('skill'); return; } // 主动技能：双击屏幕（skills.json trigger=double_tap）
-    if (g.type !== 'swipe') return;
-    if (g.dir === 'left') sim.applyAction('laneL');
-    else if (g.dir === 'right') sim.applyAction('laneR');
-    else if (g.dir === 'up') sim.applyAction('jump');
-    else if (g.dir === 'down') sim.applyAction('slide');
-  });
-  const offKey = adapter.onKey(code => {
+  // ---------- 输入 → sim（v2：手势与键盘合并为单个 onInput 订阅，§7.8） ----------
+  const offInput = adapter.onInput(e => {
+    if (e.type === 'doubleTap') { sim.applyAction('skill'); return; } // 主动技能：双击屏幕（skills.json trigger=double_tap）
+    if (e.type === 'swipe') {
+      if (e.dir === 'left') sim.applyAction('laneL');
+      else if (e.dir === 'right') sim.applyAction('laneR');
+      else if (e.dir === 'up') sim.applyAction('jump');
+      else if (e.dir === 'down') sim.applyAction('slide');
+      return;
+    }
+    if (e.type !== 'key' || e.phase !== 'down') return; // v1 隐式仅 down（§7.8）；up 留给 UI 按压态
+    const code = e.code;
     if (code === 'ArrowLeft') sim.applyAction('laneL');
     else if (code === 'ArrowRight') sim.applyAction('laneR');
     else if (code === 'ArrowUp' || code === 'Space') sim.applyAction('jump');
@@ -94,9 +100,24 @@ export function createRunnerScene(
     else if (code === 'KeyE' || code === 'ShiftLeft' || code === 'ShiftRight') sim.applyAction('skill');
   });
 
+  // ---------- 窗口尺寸变化（v2 新增 D9）：重设绘制缓冲 + 相机宽高比，退订进 dispose ----------
+  const offResize = adapter.canvas.onResize(size => {
+    renderer.setPixelRatio(size.dpr);
+    renderer.setSize(size.width, size.height, false);
+    camera.aspect = size.width / size.height;
+    camera.updateProjectionMatrix();
+  });
+
   // ---------- 主循环：固定步长推进 + 插值渲染 ----------
   let raf = 0, last = adapter.now(), acc = 0, hudTimer = 0, shakeT = 0, endTimer = -1, ended = false, running = true;
   let camY = CAM_Y_BASE, lookY = 0, camX = 0; // 相机平滑状态（初值=稳态，避免首帧俯仰跳动）
+  let paused = false; // 后台暂停位（见下方 onVisibility）
+
+  // ---------- 后台可见性（§7.9）：进后台冻结 tick 累计，回前台把 last 对齐避免 dt 尖峰 ----------
+  const offVisibility = adapter.onVisibility(hidden => {
+    paused = hidden;
+    if (!hidden) last = adapter.now();
+  });
 
   function consumeEvents() {
     for (const ev of sim.drainEvents()) {
@@ -164,6 +185,7 @@ export function createRunnerScene(
 
   function tick(nowMs: number) {
     if (!running) return;
+    if (paused) { last = nowMs; raf = adapter.requestFrame(tick); return; } // 后台冻结：不推进 sim，仅对齐时钟
     const dt = Math.min((nowMs - last) / 1000, 0.05);
     last = nowMs;
     acc += dt;
@@ -188,10 +210,11 @@ export function createRunnerScene(
   if (cb.debug) installRunProbe(sim, () => ({ x: +camX.toFixed(2), y: +camY.toFixed(2) }), bursts,
     () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles }));
 
+  // 只销毁本局资源：不销毁主画布/GL 上下文（wx 屏幕画布不可重建，S10 D1 跨局复用）。
   function dispose() {
     running = false;
     adapter.cancelFrame(raf);
-    offGesture(); offKey();
+    offInput(); offResize(); offVisibility();
     renderer.dispose();
     scene.traverse(o => {
       const m = o as THREE.Mesh;

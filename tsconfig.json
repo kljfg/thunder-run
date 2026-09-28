@@ -5,8 +5,10 @@
     { "path": "packages/platform" },
     { "path": "packages/render" },
     { "path": "packages/ui" },
+    { "path": "packages/game" },
     { "path": "packages/platform-web" },
     { "path": "packages/platform-wx" },
-    { "path": "apps/web" }
+    { "path": "apps/web" },
+    { "path": "apps/wx" }
   ]
 }

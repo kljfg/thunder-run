@@ -5,8 +5,10 @@
  *                           禁止 Math.random（随机必须走 RunRng）
  *   R2 packages/render/** ：禁止 window/document/localStorage/fetch/wx.（three 允许）
  *   R3 packages/(render|ui|game)/** ：禁止 import @tr/platform-web / @tr/platform-wx
- *                           （只有 platform-* 与 apps/* 可触平台实现；@tr/ui、@tr/game 包落地前规则先占位）
+ *                           （只有 platform-* 与 apps/* 可触平台实现）
  *   R4 所有包源文件       ：单文件不超过 300 行（docs/10 §4「一个文件一个概念」）
+ *   R5 wx 全局（S3 新增） ：packages/platform-wx 是全项目唯一允许触碰 wx 全局的包，
+ *                           apps/wx/*（工程入口与垫片）豁免；其余所有包与 apps 一律禁止
  * 用法：node tools/check-import-rules.mjs
  */
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
@@ -27,6 +29,16 @@ const DOM_GLOBALS = [
 /** 只允许 platform-* 包与 apps/* import 的平台实现包 */
 const PLATFORM_IMPLS = [
   [/from ['"]@tr\/platform-(web|wx)(\/|['"])/g, '禁止 import 平台实现包 @tr/platform-web / @tr/platform-wx（只允许 apps/* 与 platform 装配边界使用）'],
+];
+
+/** R5：wx 全局只许出现在 packages/platform-wx（apps/wx 入口垫片除外）；core/render/ui/game 已由 DOM_GLOBALS 覆盖 */
+const WX_BAN = [/\bwx\./g, 'R5：wx 全局只允许 packages/platform-wx 触碰（apps/wx 入口/垫片除外）'];
+
+/** R5 镜像：platform-wx 反向禁令——不许混入 web 全局（宿主能力一律映射到 wx API） */
+const WEB_GLOBALS = [
+  [/\bwindow\./g, 'R5：platform-wx 禁止 web 全局 window（应映射 wx API）'],
+  [/\bdocument\./g, 'R5：platform-wx 禁止 web 全局 document（应映射 wx API）'],
+  [/\blocalStorage\b/g, 'R5：platform-wx 禁止 localStorage（用 wx.*StorageSync）'],
 ];
 
 const NO_PLATFORM = ['@tr/render', '@tr/ui', '@tr/game']; // 包目录名：render / ui / game
@@ -72,6 +84,8 @@ for (const file of files) {
   const inCore = file.startsWith('packages/core/');
   const inRender = file.startsWith('packages/render/');
   const inPlatformFree = NO_PLATFORM.some(p => file.startsWith('packages/' + p.slice(4) + '/'));
+  const inPlatformWx = file.startsWith('packages/platform-wx/');
+  const inAppsWx = file.startsWith('apps/wx/');
 
   lines.forEach((line, i) => {
     if (/^\s*(\/\/|\*|\/\*)/.test(line)) return; // 行内注释允许出现关键词
@@ -85,6 +99,9 @@ for (const file of files) {
     }
     if (inCore || inRender || inPlatformFree) for (const [re, msg] of DOM_GLOBALS) hit(re, msg);
     if (inPlatformFree) for (const [re, msg] of PLATFORM_IMPLS) hit(re, msg);
+    // R5：platform-wx 之外、且 core/render/ui/game 之外（那三类已被 DOM_GLOBALS 覆盖 wx.）禁 wx.
+    if (!inCore && !inRender && !inPlatformFree && !inPlatformWx && !inAppsWx) hit(WX_BAN[0], WX_BAN[1]);
+    if (inPlatformWx) for (const [re, msg] of WEB_GLOBALS) hit(re, msg);
   });
 }
 
@@ -93,4 +110,4 @@ if (violations.length) {
   violations.forEach(v => console.error('  ✗', v));
   process.exit(1);
 }
-console.log(`架构禁令检查通过（${files.length} 个源文件：无平台越界引用，全部 ≤${MAX_FILE_LINES} 行）`);
+console.log(`架构禁令检查通过（${files.length} 个源文件：无平台越界引用、wx 全局仅在 platform-wx/apps-wx，全部 ≤${MAX_FILE_LINES} 行）`);

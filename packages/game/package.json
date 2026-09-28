@@ -1,0 +1,13 @@
+{
+  "name": "@tr/game",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "两端共用的主流程组装层（redesign §3.5）：配置装配 + 场景状态机 + run 生命周期。视图经 GameViews 接口注入，包内零 DOM/wx。",
+  "exports": { "./*": "./dist/*" },
+  "dependencies": {
+    "@tr/core": "*",
+    "@tr/platform": "*",
+    "@tr/render": "*"
+  }
+}

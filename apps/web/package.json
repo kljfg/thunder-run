@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tr/core": "*",
+    "@tr/game": "*",
     "@tr/platform": "*",
     "@tr/platform-web": "*",
     "@tr/render": "*"

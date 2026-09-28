@@ -17,6 +17,7 @@
     "check": "node tools/check.mjs",
     "dev": "npm run build && npm run dev --workspace @tr/web",
     "build:web": "npm run build && npm run build --workspace @tr/web",
+    "build:wx": "node tools/build-wx.mjs",
     "preview:web": "npm run preview --workspace @tr/web"
   },
   "devDependencies": {
