@@ -51,16 +51,19 @@ docs/                  重设计方案、会话协调计划、manifest schema
 
 ## 5. 硬性约束（脚本强制，违反 = check 失败）
 
+- **职责边界**：本团队只做框架与技术栈（引擎/平台层/UI 框架/构建/CI/测试/性能/网络/存档框架），
+  **不改游戏本体内容**——`config/*.json` 的玩法段数值（关卡/角色/道具/经济/活动）一律不动，
+  框架只增改技术段（quality/ui/audio/perf）。发现数值问题开 issue 知会作者侧。详见 `docs/framework-roadmap.md` §1。
 - `packages/(core|render|ui|game)` 禁止 import 平台包与 DOM/wx 全局；平台代码只许出现在 `platform-*` 与 `apps/*`。
 - 任何源文件 ≤ 300 行。
 - 新增效果原语必须五处同一提交内改完（PRIMITIVES 注册 + 合并规则 + schema enum + 设计文档表格 + 测试矩阵）。
-- 改 `config/*.json` 数值：设计文档库另有一份同源配置，PR 描述中列出改动清单以便同步。
+- 改 `config/*.json` 技术段：schema 与设计文档库需同步，PR 描述中列出改动清单。
 
-## 6. 当前任务板（详情与派发提示词见 docs/session-plan.md）
+## 6. 当前任务板（详情与派发提示词见 docs/session-plan.md，框架专项见 docs/framework-roadmap.md）
 
 - 已完成并合入 dev：S1 工具修复、S2 monorepo 搬迁、S10 Adapter v2 规格、S11 three×wx spike、S12 SDF 字体工具链、S13 UI 布局内核、S14 热更新 manifest 原型。
-- 下一波可认领：**S3**（平台层 v2 实现 + platform-wx + 小游戏空场景，消费 S10 规格与 S11 结论）、**S4**（UI 自绘框架，搬运 S12 字体产物与 S13 布局内核）。两者可并行。
-- 认领方式：联系协调者会话领取派发提示词，或直接按 session-plan.md §2 对应小节执行。
+- 可认领（4 个并行位）：**S3**（平台层 v2 + platform-wx，消费 S10 规格与 S11 路线 B 结论）、**S4**（UI 自绘框架，搬运 S12 字体产物与 S13 布局内核）、**S15**（CI/CD 门禁）、**S19a**（golden-master 回归 + 输入重放格式）。
+- 认领方式：联系协调者会话领取派发提示词，或直接按 session-plan.md / framework-roadmap.md §3 对应小节执行。
 
 ## 7. 遇到问题
 

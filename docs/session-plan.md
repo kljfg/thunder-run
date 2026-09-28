@@ -1,7 +1,7 @@
 # 会话协调计划（小游戏重设计 · S 系列任务）
 
 > 协调者会话负责本文件的维护：任务分派、状态登记、集成裁决。执行会话只跑自己被分配的提示词。
-> 决策基线见 `docs/wx-minigame-redesign.md`。
+> 决策基线见 `docs/wx-minigame-redesign.md`；**团队职责边界（只做框架与技术栈，不碰玩法内容）与 S15-S19 新任务见 `docs/framework-roadmap.md`**。
 
 ## 0. 协调协议
 
@@ -360,6 +360,12 @@ apps/wx 壳，不碰 packages/ui 与页面代码；产物里 UI 暂时是 S3 空
 | S12 | SDF 字体工具链 | 1.5 | - | 已合并@a68b68d | feat/s12-sdf-font | assets/fonts 图集+metrics；9/9 用例绿 |
 | S13 | UI 布局纯逻辑内核 | 1.5 | - | 已合并@ce82749 | feat/s13-ui-layout | spike/ui-layout，82 例绿，API.md 为 S4 契约 |
 | S14 | manifest 原型 | 1.5 | - | 已合并@138a074 | feat/s14-manifest | docs/manifest-schema.md + publish-content.mjs，22 例绿 |
+| S15 | CI/CD 门禁 | 2 | - | 待派发 | feat/s15-ci | 零依赖，可立即；见 framework-roadmap §3 |
+| S19a | golden-master+输入重放 | 2 | - | 待派发 | feat/s19a-replay | 纯新增，可立即；S18 地基 |
+| S16 | 遥测/日志框架 | 3 | S3 | 待派发 | feat/s16-telemetry | |
+| S17 | 音频框架 | 3 | S3 | 待派发 | feat/s17-audio | 资源由内容侧投放 |
+| S19b | UI 快照+perf bench | 4 | S4,S6 | 待派发 | feat/s19b-bench | |
+| S18 | 存档防作弊(云复跑) | 5 | S9,S19a | 待派发 | feat/s18-anticheat | 确定性 sim 复跑校验 |
 
 状态取值：待派发 / 进行中 / 阻塞:<原因> / 待评审 / 已合并@<commit>
 
