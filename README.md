@@ -2,10 +2,12 @@
 
 [![CI](https://github.com/kljfg/thunder-run/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/kljfg/thunder-run/actions/workflows/ci.yml)
 
+> **协作者入口：[docs/README.md](docs/README.md)**——规划文档索引、任务池与认领方式、框架/内容边界。架构总览见 [docs/framework-architecture.md](docs/framework-architecture.md)。
+
 > 实现仓库。设计与规范的唯一事实源在文档库 `D:\gpt-6\work\酷跑小游戏`（下称 docs 库），本仓库只放代码与可运行配置。
 > 当前进度：**M2 数据驱动接入 4/5**（T2.1 参数外置 · T2.2 效果原语引擎 · T2.3 道具掉落 · T2.4 角色装配与技能）；
 > **M5 工程化切换已完成**（npm workspaces 拆包 `src/` → `packages/* + apps/web`，tsc -b + Vite 构建链，three/tsc 切 npm 依赖，见 `docs/wx-minigame-redesign.md` §2/§4）。
-> 后续：~~M6 平台层泛化~~ **S3 已完成**（`@tr/platform` v2 契约落地 + `@tr/platform-wx` 完整实现 + `apps/wx` 工程壳，three 空场景 60fps 跑通，见 `docs/platform-adapter-v2.md`）→ M7 UI 自绘（`@tr/ui` 现为空壳）→ M8/M9。
+> 后续：~~M6 平台层泛化~~ **S3 已完成**（`@tr/platform` v2 契约落地 + `@tr/platform-wx` 完整实现 + `apps/wx` 工程壳，three 空场景 60fps 跑通，见 `docs/platform-adapter-v2.md`）→ ~~M7 UI 自绘~~ **S4 已完成**（`@tr/ui` 自绘框架落地：布局内核+OrthoOverlay+SDF 文本，契约见 `packages/ui/API.md`；页面迁移 S5 进行中）→ M8/M9。
 > 已延期/待办：~~T0.3 微信小游戏壳~~（S3 已复活为 `apps/wx`，构建产物 `npm run build:wx`）、T2.5 配置热更新 manifest 客户端（需 CDN/服务端，随 M3 一起做）。
 
 ## 快速开始（小白版）
