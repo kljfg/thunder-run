@@ -27,19 +27,23 @@ export function createAvatar(scene: THREE.Scene, laneWidth: number, look: Loadou
     new THREE.MeshBasicMaterial({ color: 0x9fdcff, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending }));
   flame.rotation.x = Math.PI;
   flame.visible = false;
-  scene.add(flame);
 
   // 头盔罩（lifeAdd 原语）
   const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2),
     new THREE.MeshStandardMaterial({ color: 0xffd84d, metalness: 0.4, roughness: 0.3, transparent: true, opacity: 0.9, flatShading: true }));
   helmet.visible = false;
-  scene.add(helmet);
 
   // 护盾罩（shieldAdd 原语；层数>0 时显示，破碎即隐藏）
   const shieldOrb = new THREE.Mesh(new THREE.SphereGeometry(0.72, 16, 12),
     new THREE.MeshBasicMaterial({ color: new THREE.Color(look.emissive), transparent: true, opacity: 0.26, blending: THREE.AdditiveBlending }));
   shieldOrb.visible = false;
-  scene.add(shieldOrb);
+
+  // 三个挂件统一挂到躯干组（body 的本地坐标，root 缩放自动继承）：
+  // 随身体起伏/前倾，且死亡翻倒（group.rotation.x = topple）时一起倒，不再只跟位置。
+  model.body.add(flame, helmet, shieldOrb);
+  flame.position.set(0, 0.6, model.packLocalZ);
+  helmet.position.set(0, model.headLocalY, 0);
+  shieldOrb.position.set(0, model.chestLocalY, 0);
 
   return {
     group,
@@ -62,18 +66,12 @@ export function createAvatar(scene: THREE.Scene, laneWidth: number, look: Loadou
       const flying = fx.flyT > 0;
       flame.visible = flying || s.gliding;
       if (flame.visible) {
-        // 火焰从雷核背包底部喷出（pack 中心约在髋肩中点）
-        flame.position.set(s.x, s.y + 0.6 * look.modelScale, model.packZ);
         const fs = 0.7 + Math.sin(s.t * 22) * 0.2;
         flame.scale.set(fs, 0.7 + fs * 0.4, fs);
       }
       helmet.visible = fx.helmetT > 0;
-      if (helmet.visible) helmet.position.set(s.x, s.y + model.headY, 0);
       shieldOrb.visible = fx.shieldLayers > 0;
-      if (shieldOrb.visible) {
-        shieldOrb.position.set(s.x, s.y + model.chestY, 0);
-        shieldOrb.scale.setScalar(1 + 0.05 * Math.sin(s.t * 6)); // 缓慢呼吸感
-      }
+      if (shieldOrb.visible) shieldOrb.scale.setScalar(1 + 0.05 * Math.sin(s.t * 6)); // 缓慢呼吸感
     },
   };
 }

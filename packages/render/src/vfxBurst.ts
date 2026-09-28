@@ -6,7 +6,8 @@ import * as THREE from 'three';
 
 const BURST_T = 0.35;
 const BURST_PARTICLES = 7;
-const BURST_POOL = 8;
+/** 池容量：连吃金币/穿云时 8 个槽位不够用，翻倍到 16（复用路径不变，仍零分配） */
+const BURST_POOL = 16;
 /** 粒子抛体：初速范围、重力、以及磁铁期的放大档 */
 const SPARK_SPD = [1.6, 2.4], SPARK_GRAVITY = 7.5, MAGNET_SCALE = 1.4;
 const DEFAULT_COLOR = 0xffd84d;
