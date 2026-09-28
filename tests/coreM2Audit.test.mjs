@@ -151,7 +151,7 @@ test('飞行落地不变量（30 seed）：同车道近距障碍零重复，落�
       wasGliding = sim.state.gliding;
       sim.step();
       if (sim.fx.flyT > 0) sawFly = true;
-      // 滑翔段结束的那一帧即落地帧（closeSky 已在该帧执行）
+      // 滑翔段结束的那一帧即落地帧（该帧已执行落地净空清理）
       if (sawFly && wasGliding && !sim.state.gliding && sim.state.y === 0) {
         landedAt = sim.state.distance;
         break;

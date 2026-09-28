@@ -11,7 +11,6 @@
 import type { RunRng } from '../rng.js';
 import type { GameContent, NamedEntry } from '../config/configTypes.js';
 import { BLOCKING_CLASSES, normalizeSwing, type SwingSpec } from './trackDefs.js';
-import { SkyGate } from './trackSky.js';
 
 export interface ObstacleEntity {
   obsRef: string;
@@ -60,13 +59,6 @@ export class TrackGen {
   private chainSeq = 0; // 链编号（整链撤回用）
   /** 上一个抽中的模板 id：pickPattern 用于避免连续同模板 */
   private lastPatternId = '';
-  private readonly sky = new SkyGate();
-
-  /** 登记空中段：ensure() 遇到区间内不再生成任何地面内容（飞行器调用） */
-  openSky(from: number, to: number) { this.sky.open(from, to, this.genZ); }
-
-  /** 落地收尾：把覆盖 z 之前的空中段提前截断，并把生成线回拨，让障碍/金币/道具尽快恢复 */
-  closeSky(z: number) { this.genZ = this.sky.close(z, this.genZ); }
 
   constructor(content: GameContent, private rng: RunRng) {
     const ob = content.obstacles;
@@ -99,8 +91,9 @@ export class TrackGen {
   difficulty(z: number): number { return Math.floor(z / 300); }
 
   /**
-   * 开启空中段（飞行器触发）：在 [fromZ,toZ] 生成三条车道的加密金币带（悬浮在飞行高度）
-   * 与随机分布的云团。空中段内不生成任何障碍（由 sim 负责移除已生成的）。
+   * 铺设空中内容（飞行器触发/续时）：在 [fromZ,toZ] 生成三条车道的加密金币带（悬浮在飞行
+   * 高度）与随机分布的云团。地面内容（障碍/地面金币/道具箱）不受影响、照常生成——飞行只是
+   * 从上方掠过，玩家要求「天上也能看到地面障碍」；着陆安全由滑翔段的动态清道保证。
    */
   spawnSky(fromZ: number, toZ: number, skyY: number, coins: CoinEntity[], clouds: CloudEntity[]) {
     const spacing = this.coinSpacing * 0.65; // 空中金币带：间距再收紧、链间空档缩短（"金币会变多"）
@@ -124,11 +117,8 @@ export class TrackGen {
 
   /** 保证赛道铺到 distance + aheadM；新障碍/金币/道具箱追加进传入数组（sim 持有所有权） */
   ensure(distance: number, aheadM: number, obstacles: ObstacleEntity[], coins: CoinEntity[], pickups: PickupEntity[] = []) {
-    // 推进目标按未关闭空中段末端截断：飞行期间生成线不得越过段尾，保证落地回拨只落入未生成区
-    const target = this.sky.cap(distance + aheadM);
+    const target = distance + aheadM;
     while (this.genZ < target) {
-      // 空中段：整段跳过地面内容（金币带与云由 spawnSky 预铺）
-      if (this.sky.inSky(this.genZ)) { this.genZ += this.segLen; continue; }
       const pat = this.pickPattern(this.difficulty(this.genZ));
       const patStart = obstacles.length; // 记录本轮新障碍起点（金币反向清理用）
       for (const cell of pat.cells) {
@@ -284,5 +274,21 @@ export class TrackGen {
     let max = 0;
     for (const s of perSeg.values()) max = Math.max(max, s.size);
     return max;
+  }
+
+  /** 清空与 [fromZ,toZ] 深度区间相交的地面障碍（滑翔着陆走廊/落地缓冲/起飞窄带；swap-pop 不保序）。
+   *  lane 省略时清全部车道；传入车道号时只清该车道（起飞窄带只清玩家当前跑道）。
+   *  返回移除数量。移除而非标记 done：渲染层也据此停止绘制，避免落地/起飞穿过残留模型。 */
+  clearObstacles(obstacles: ObstacleEntity[], fromZ: number, toZ: number, lane?: number): number {
+    let n = 0;
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+      const o = obstacles[i];
+      if (lane !== undefined && o.lane !== lane) continue;
+      if (o.worldZ + o.d / 2 < fromZ || o.worldZ - o.d / 2 > toZ) continue;
+      obstacles[i] = obstacles[obstacles.length - 1];
+      obstacles.pop();
+      n++;
+    }
+    return n;
   }
 }
