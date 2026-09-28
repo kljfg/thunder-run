@@ -50,7 +50,7 @@ packages/ui   packages/render  packages/audio  packages/telemetry
 | UI 控件契约 | packages/ui/API.md | ui | game/src/ui、apps | ✅ S4，S5 起正式消费 |
 | SDF 字体规格 | assets/fonts/README.md（latin+cjk 图集/metrics） | tools/fontgen | ui | ✅ S12+S4 修复 |
 | AudioBackend | packages/platform/src/audio.ts + docs/audio-events.md 挂点表 | platform-web/wx | packages/audio → game（S20 接线） | ✅ S17，接线待 S20 |
-| Telemetry 三通道 | docs/telemetry-spec.md + drafts/telemetry.ts | packages/telemetry（S16b 实现中） | game/render/platform（S20 接线） | 🔨 S16b |
+| Telemetry 三通道 | docs/telemetry-spec.md + packages/telemetry/src/types.ts（drafts 已定稿迁入） | packages/telemetry | game/render/apps（S20 接线）；S18 复用 digests/canonical；S19b 复用 buckets | ✅ S16b 落地，接线待 S20（docs/telemetry-wiring.md） |
 | 输入重放格式 v1 | docs/replay-format.md | tools/replay | tests/golden、S18 云复跑 | ✅ S19a |
 | golden-master | tests/golden/（15 组 seed×角色） | tools/replay/golden-gen.mjs | CI/内容侧协议 | ✅ S19a |
 | 热更新 manifest | docs/manifest-schema.md + tools/publish-content.mjs | S8 客户端接线 | configLoader、platform-wx | ✅ 原型，S8 实装 |
@@ -75,7 +75,7 @@ packages/ui   packages/render  packages/audio  packages/telemetry
 | 会话 | 拥有 | 禁碰 |
 |------|------|------|
 | （S5 ✅ 已合并@cd9008b） | — | — |
-| S16b | packages/telemetry、platform-web/src/telemetryChannel.ts（新文件） | game、apps/web/src、platform-wx、audio |
+| （S16b ✅ 已合并@16dd278） | — | — |
 | （S17 ✅ 已合并） | — | — |
 | S20（整合） | 接线专属：bootstrap/mainFlow/runnerScene 的埋点与音频挂点、platform-wx 通道注册、UI 与主场景 renderer 合并 | 不做新功能 |
 
@@ -127,8 +127,9 @@ packages/ui   packages/render  packages/audio  packages/telemetry
 
 ## 8. 当前完成度快照（2026-09-28）
 
-- 已合并：S1-S6、S10-S15、S16a、S17、S19a + M2 运行时审计修复（`f2d1948`）；364 测试例（0 fail），check ALL PASS
-- 在飞：S16b（遥测实现，已提交未 push，需 rebase 到 dev）
+- 已合并：S1-S6、S10-S15、S16a、S16b、S17、S19a + M2 运行时审计修复（`f2d1948`）；437 测试例（0 fail），check ALL PASS
+- **波次3 全部收口**（S5 页面迁移 + S6 wx 构建 + S16b 遥测 + S17 音频），无在飞框架任务
+- 手测：web 壳全流程（启动→登录→选角→跑一局→结算→重开）已由用户验证通过（2026-09-28）
 - 内容轨道：C1/C2 已派发（issue #7/#8），可与框架波次并行
-- 下一波：S20 整合（含 renderer 合并）→ S7/S8/S19b → S9/S18 → 上架材料
-- 待手测：web 壳全流程（启动→登录→选角→跑一局→结算→重开）与 `?ui=demo`、`?debug` 探针不回退
+- 下一波：**S20 整合（已解锁，可派发）**——telemetry 埋点接线 / audio 事件挂点 / platform-wx 通道注册 /
+  UI 与主场景单 renderer 两 pass 合并 → 之后 S7/S8/S19b → S9/S18 → 上架材料

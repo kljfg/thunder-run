@@ -498,9 +498,9 @@ docs/wx-minigame-redesign.md §3.5（目录结构与分包设计）、spike/wx-t
 | S15 | CI/CD 门禁 | 2 | - | 已合并(PR#5) | feat/s15-ci | CI 双平台绿（run 36371594917）；issue #3 已关 |
 | S19a | golden-master+输入重放 | 2 | - | 已合并@1ef3481 | feat/s19a-replay | 155/155 绿；issue #4 已关；golden 与 config 玩法段绑定，改数值需审查后 --update |
 | S16a | 遥测接口规格 | 2 | - | 已合并@a869e47 | feat/s16a-telemetry-spec | docs/telemetry-spec.md + drafts/telemetry.ts |
-| S16b | 遥测/日志实现 | 3 | S3✓,S16a✓ | 待评审 | feat/s16b-telemetry | 已提交@330865a（worktree ..\tr-s16b，工作区干净）但**未 push、无 PR**；基线在 S17 合入前，需 rebase（注意 81d2b06 的 package-lock） |
+| S16b | 遥测/日志实现 | 3 | S3✓,S16a✓ | 已合并@16dd278 | feat/s16b-telemetry | rebase 到 dev 无冲突；437 例 0 fail；纯逻辑包+双端通道，73 例单测；接线留 S20（docs/telemetry-wiring.md 含 16 项偏差清单） |
 | S17 | 音频框架 | 3 | S3✓ | 已合并@f70f79b | feat/s17-audio | AudioEngine+双端 backend，28 例；接线留 S20；提交曾错落 s6 分支已收编 |
-| S20 | 整合接线 | 3.5 | S5✓,S6✓,S16b,S17✓ | 待派发 | feat/s20-integration | 短任务：telemetry 埋点/audio 事件/wx 通道注册 + **UI 与主场景单 renderer 两 pass 串接**（S5 遗留，wx 侧双 canvas 代价高，优先级最高）；协调者执行 |
+| S20 | 整合接线 | 3.5 | S5✓,S6✓,S16b✓,S17✓ | 就绪可派 | feat/s20-integration | 短任务：telemetry 埋点/audio 事件/wx 通道注册 + **UI 与主场景单 renderer 两 pass 串接**（S5 遗留，wx 侧双 canvas 代价高，优先级最高）；协调者执行 |
 | S19b | UI 快照+perf bench | 4 | S4,S6 | 待派发 | feat/s19b-bench | 追加：golden 覆盖补飞行链路（现 15 组重放均不含飞行道具） |
 | S18 | 存档防作弊(云复跑) | 5 | S9,S19a | 待派发 | feat/s18-anticheat | 确定性 sim 复跑校验 |
 | M2-fix | M2 运行时审计修复（mostny，非 S 编号） | — | - | 已合并@f2d1948 | fix/m2-runtime-bugs | 6 提交全量接受；354 例 0 fail；golden 基线重生成；契约变更 EffectWorld.extendFlight / TrackGen.clearObstacles |
