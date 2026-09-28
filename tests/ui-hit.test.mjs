@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { layout, hitPath, topTarget } from '../dist/index.js'
+import { layout, hitPath, topTarget } from '../packages/ui/dist/index.js'
 
 const ids = (path) => path.map((b) => b.id)
 const VP = { w: 400, h: 300 }

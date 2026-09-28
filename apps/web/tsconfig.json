@@ -6,12 +6,15 @@
     "emitDeclarationOnly": true,
     "types": []
   },
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "references": [
     { "path": "../../packages/core" },
     { "path": "../../packages/game" },
     { "path": "../../packages/platform" },
     { "path": "../../packages/platform-web" },
-    { "path": "../../packages/render" }
+    { "path": "../../packages/render" },
+    { "path": "../../packages/ui" }
   ]
 }

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createButton, buttonNext, buttonActivates } from '../dist/index.js'
+import { createButton, buttonNext, buttonActivates } from '../packages/ui/dist/index.js'
 
 test('初始态：默认 normal，可指定 disabled', () => {
   assert.equal(createButton().state, 'normal')

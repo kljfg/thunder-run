@@ -17,12 +17,17 @@ export function repoRoot(from = HERE) {
   return resolve(from, '..', '..');
 }
 
-/** 待扫描文件清单：screens.ts（两个历史路径取存在者）+ config/*.json。 */
+/** 待扫描文件清单：screens.ts（两个历史路径取存在者）+ S4 演示页文案 + config/*.json。 */
 export function scanTargets(root) {
   const files = [];
   for (const rel of ['src/ui/screens.ts', 'apps/web/src/ui/screens.ts']) {
     const p = join(root, rel);
     try { readFileSync(p, 'utf8'); files.push(p); break; } catch { /* 下一个候选 */ }
+  }
+  // S4 起自绘 UI 文案入库即入字符集（?ui=demo 验收页；S5 页面迁移后在此追加页面源）
+  for (const rel of ['apps/web/src/uiDemoView.ts']) {
+    const p = join(root, rel);
+    try { readFileSync(p, 'utf8'); files.push(p); } catch { /* 尚未落地则跳过 */ }
   }
   const cfgDir = join(root, 'config');
   for (const name of readdirSync(cfgDir).sort()) {

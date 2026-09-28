@@ -57,7 +57,7 @@ thunder-run/
 │   │   ├── entityLayers.ts     障碍池 / 道具箱池 / 云团池
 │   │   ├── vfxBurst.ts         拾取爆点粒子池
 │   │   └── runDebugProbe.ts    ?debug 自动化探针（__trRun.state / __trRun.probe）
-│   ├── ui/                     ★ @tr/ui 空壳占位（M7/S4 落地自绘 UI 框架）
+│   ├── ui/                     ★ @tr/ui 自绘 UI 框架（S4 已落地：布局内核+OrthoOverlay+控件+SDF 文本，契约见 packages/ui/API.md）
 │   ├── game/                   ★ @tr/game：两端共用主流程（views 接口 + mainFlow 场景机 + emptyMain 空场景），零 DOM/wx
 │   ├── platform-web/           @tr/platform-web：webPlatform.ts（调试壳实现，DOM/BOM 唯一入口）+ webExtras.ts（WxExtras 兜底）
 │   └── platform-wx/            @tr/platform-wx：wx 实现（canvas 垫片/触摸/存储/网络/帧循环）+ WxExtras；唯一允许触碰 wx 全局的包
@@ -73,8 +73,8 @@ thunder-run/
 │   └── wx/                     ★ @tr/wx：微信小游戏工程壳（S3）：game.json/project.config.json + src/main.ts；dist/ 为构建产物
 ├── config/                     8 个内容配置（与 docs 库 config/ 同源，改完两边要同步；Vite publicDir 挂载）
 ├── vendor/                     three.js r160 运行时 + 类型（M5 起仅作回滚/离线兜底，构建链已切 npm 依赖）
-├── tools/                      check.mjs 四步聚合 / 禁令脚本 / build-wx.mjs 小游戏打包 / tsc vendor 兜底 / serve.py 静态兜底
-├── tests/                      node:test 单元测试（182 例，import 各包 dist/ 产物）
+├── tools/                      check.mjs 四步聚合 / 禁令脚本 / build-wx.mjs 小游戏打包 / fontgen SDF 字体 / replay golden-master / tsc vendor 兜底 / serve.py 静态兜底
+├── tests/                      node:test 单元测试（302 例，import 各包 dist/ 产物）
 └── <各包>/dist/                编译产物（不入库，tsc -b 生成）
 ```
 

@@ -1,9 +1,13 @@
-# spike/ui-layout · API 契约（S13 → S4）
+# packages/ui · 内核 API 契约（S13 → S4，已搬入）
 
-> 自绘 UI 纯逻辑内核。**零运行时依赖、零 DOM/three/仓库 src 引用**（tsconfig `lib` 不含 DOM，编译期即证明）。
-> S4 搬运方式：`src/*.ts` 原样拷入 `packages/ui/src/`（文件名不变），`tests/*.test.mjs` 拷入根 `tests/` 并把
-> `../dist/index.js` 改为 `../packages/ui/dist/index.js`（或按 S2 约定指向 `@tr/ui`）。
-> 本文是 S4 接 three OrthoOverlay 的**唯一依据**；语义以本文 + node:test 用例为准。
+> 自绘 UI **纯逻辑内核**部分（types/layout/hit/router/scroll/button/virtualList）。内核零运行时依赖、
+> 零 DOM/wx 引用；同包的 S4 渲染框架（overlay/view/widgets/text/render）依赖 three，见 index.ts 出口。
+> 搬运已完成（S4）：`src/*.ts` 原样位于 `packages/ui/src/`，spike/ui-layout 已删除；
+> 测试迁入根 `tests/ui-{layout,hit,router,scroll,button,virtualList}.test.mjs`（import `../packages/ui/dist/index.js`），
+> 随 `npm run check` 执行。本文是内核语义的**唯一依据**；语义以本文 + node:test 用例为准。
+>
+> S4 渲染层补充约定：控件 handler 遵循「capture/target 响应、bubble 跳过」（InputRouter 对路径上注册节点
+> capture 与 bubble 各发一次，DOM 语义；跳过 bubble 保证控件每事件恰好处理一次，见 widget.ts skipBubble）。
 
 ## 0. 模块清单与坐标系
 
@@ -113,15 +117,10 @@ estimateVelocity(samples: {x,t}[]): number  // 尾部 100ms 窗口差商
 | `bounceDamping` | 26 | 回弹阻尼（默认≈临界阻尼，不振荡） |
 | `settleEpsPx` / `settleEpsPxS` | 0.5 / 8 | 回弹收敛阈值 |
 
-**config/game.json 未来 `params.ui.scroll` 段草案**（S4 落地时同步 schema + docs/03 参数表）：
-
-```json
-"ui": { "scroll": {
-  "frictionPerS": 4.2, "minVelocityPxS": 12, "flingMaxPxS": 6000,
-  "overscrollResist": 0.35, "bounceStiffness": 170, "bounceDamping": 26,
-  "settleEpsPx": 0.5, "settleEpsPxS": 8
-} }
-```
+**config/game.json `params.ui` 段已落地（S4）**：`ui.scroll`（8 个手感参数，与 defaultScrollFeel 同源）+
+`ui.press.slopPx/tapMaxMs` + `ui.doubleTap.windowMs/maxDistPx` + `ui.text.fontSizePx/lineHeightMul`。
+解析入口 `resolveUiConfig(game.params)`（packages/ui/src/uiConfig.ts），范围校验在 core
+`configValidator.validateUiParams`（validateFile('game') 自动执行）。
 
 行为承诺（测试锚定）：惯性速度单调衰减、总位移≈v0/friction（±20%）；越界（拖拽/fling）必在有限步内弹回
 `[0,maxOffset]` 并精确静止；content≤viewport 时任何操作都收敛回 0；大 dt/NaN 不发散。
@@ -164,7 +163,9 @@ contentExtentOf(spec) / itemStart(spec, i) / clampOffset(spec, offset)
 ## 7. 构建与测试
 
 ```bash
-npm i        # 仅 devDependency typescript@5.5.4（与仓库根一致）
-npm test     # = tsc 构建 dist/ + node --test tests/*.test.mjs（82 例）
+npm install            # 仓库根（npm workspaces；three/@types/three 随装）
+npm run check          # = tsc -b + node --test tests/*.test.mjs + 配置校验 + 架构禁令（内核 82 例含其中）
 ```
-独立于根 check.mjs；dist/、node_modules/ 不入库（spike 内 .gitignore）。
+
+内核测试文件：`tests/ui-{layout,hit,router,scroll,button,virtualList}.test.mjs`；
+S4 渲染框架测试：`tests/ui-{text,config,ninepatch,widgets}.test.mjs`（headless，不建 WebGL 上下文）。

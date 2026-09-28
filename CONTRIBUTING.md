@@ -19,7 +19,7 @@
 |------|------|
 | `npm run check` | 编译 + 单测 + 配置校验 + 架构禁令，一键全绿才算完成 |
 | `npm run build` | tsc -b 类型构建（project references，产物在各包 `dist/`） |
-| `npm test` | node:test 单测（182 例；**必须先 build**，测试 import dist 产物） |
+| `npm test` | node:test 单测（**必须先 build**，测试 import dist 产物） |
 | `npm run dev` | Vite 调试壳（apps/web），URL 加 `?debug` 出自动化探针 `__trRun.*` |
 | `npm run build:web` | 网页端生产构建 |
 | `npm run build:wx` | 微信小游戏构建（`tools/build-wx.mjs` → `apps/wx/dist/`，开发者工具导入目录；S3 起可用） |
@@ -29,16 +29,15 @@
 ```
 packages/core          纯逻辑：sim/效果引擎/配置/rng（禁 DOM/three/平台代码）
 packages/render        three.js 场景层（只依赖 WebGL canvas 抽象；含 emptyScene 空场景）
-packages/ui            自绘 UI（建设中，S4/S5）
+packages/ui            自绘 UI 框架（S4 落地）：S13 布局内核 + OrthoOverlay/控件/SDF 文本（契约见 packages/ui/API.md）
 packages/game          两端共用主流程（views 接口 + mainFlow + emptyMain，S3 从 apps/web 提取）
 packages/platform      PlatformAdapter v2 接口（零 DOM/wx 类型）+ 手势共享内核（docs/platform-adapter-v2.md）
 packages/platform-web  网页实现（webPlatform + webExtras 兜底）
 packages/platform-wx   微信实现（S3 落地：垫片/触摸/存储/网络/帧循环 + WxExtras；唯一可触 wx 全局的包）
-apps/web               调试壳（Vite）
+apps/web               调试壳（Vite；?debug 探针；?ui=demo 自绘 UI 演示页）
 apps/wx                微信小游戏工程壳（S3：game.js/game.json/project.config.json）
 spike/wx-three         three×小游戏可行性验证结论（S11，已定路线 B 最小垫片）
-spike/ui-layout        UI 布局/命中纯逻辑内核（S13，待 S4 搬入 packages/ui）
-tools/                 check.mjs、校验脚本、build-wx.mjs、fontgen（SDF 字体生成）
+tools/                 check.mjs、校验脚本、build-wx.mjs、fontgen（SDF 字体生成）、replay（golden-master）
 config/                8 个内容配置（与设计文档库同源，改动需双向同步）
 docs/                  重设计方案、会话协调计划、manifest schema
 ```

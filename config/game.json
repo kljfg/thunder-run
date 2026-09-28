@@ -2,7 +2,7 @@
   "$schema": "../schema/config.schema.json#/game",
   "configVersion": "1.0.0",
   "minEngineVersion": "1.0.0",
-  "updatedAt": "2026-09-25",
+  "updatedAt": "2026-09-28",
   "params": {
     "runner": {
       "baseSpeed": 12,
@@ -119,6 +119,30 @@
         "shadow": false,
         "lodBias": 2,
         "dprCap": 1.0
+      }
+    },
+    "ui": {
+      "scroll": {
+        "frictionPerS": 4.2,
+        "minVelocityPxS": 12,
+        "flingMaxPxS": 6000,
+        "overscrollResist": 0.35,
+        "bounceStiffness": 170,
+        "bounceDamping": 26,
+        "settleEpsPx": 0.5,
+        "settleEpsPxS": 8
+      },
+      "press": {
+        "slopPx": 8,
+        "tapMaxMs": 350
+      },
+      "doubleTap": {
+        "windowMs": 280,
+        "maxDistPx": 40
+      },
+      "text": {
+        "fontSizePx": 16,
+        "lineHeightMul": 1.2
       }
     },
     "flight": {

@@ -11,5 +11,7 @@
   <main id="screen"></main>
   <!-- Vite 入口：Three.js 等依赖由 @tr/render 的 npm 依赖解析（不再走 importmap） -->
   <script type="module" src="/src/bootstrap.ts"></script>
+  <!-- S4 自绘 UI 演示页（?ui=demo 时接管屏幕；平时立即返回，不影响 bootstrap） -->
+  <script type="module" src="/src/uiDemo.ts"></script>
 </body>
 </html>

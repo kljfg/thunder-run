@@ -26,6 +26,7 @@ const SKIP_GEN = depsInstalled ? false : 'fontgen 依赖未安装：cd tools/fon
 const { collectCharset, extractChars, formatCharset, parseCharset, isAsciiPrintable, scanTargets } =
   await import(new URL('charset.mjs', FONTGEN));
 const pngLib = await import(new URL('lib/png.mjs', FONTGEN)); // 纯 node:zlib，无外部依赖
+const raster = await import(new URL('lib/raster.mjs', FONTGEN)); // 纯浮点光栅化，无外部依赖
 
 let gen = null;
 if (depsInstalled) gen = await import(new URL('gen.mjs', FONTGEN));
@@ -137,7 +138,8 @@ test('gen: 字符集覆盖——全部字符进入 glyphs 或 missing，missing 
 test('gen: SDF 编码——墨迹深处接近 255、远外部接近 0、沿行扫过 0.5 边缘', { skip: SKIP_GEN }, () => {
   const src = fontSource();
   if (!src) return;
-  const { atlas, metrics, width } = gen.generateAtlas({ ...makeOpts(), ...src, codepoints: ['雷'.codePointAt(0)] });
+  // 大字号：笔画足够粗才有 sd≥+4px 的「深内部」（小字号细笔画的 SDF 峰值本就低于 255）
+  const { atlas, metrics, width } = gen.generateAtlas({ ...makeOpts(), size: 64, ...src, codepoints: ['雷'.codePointAt(0)] });
   const g = metrics.glyphs.find((x) => x.char === '雷');
   assert.ok(g, '雷 not rasterized');
   const at = (dx, dy) => atlas[(g.cell.y + dy) * width + g.cell.x + dx];
@@ -173,4 +175,21 @@ test('assets: 已提交图集可解码且与 metrics 尺寸一致', () => {
       assert.ok(g.cell.x + g.cell.w <= width && g.cell.y + g.cell.h <= height, `${name} ${g.char} cell out of bounds`);
     }
   }
+});
+
+// ---------------- 光栅化填充规则（S4 修复：孔洞轮廓不得填实） ----------------
+
+test('raster: non-zero winding 跨轮廓合并——孔洞保持镂空', () => {
+  const outer = [[0, 0], [10, 0], [10, 10], [0, 10]];       // 外轮廓（一个绕向）
+  const hole = [[3, 3], [3, 7], [7, 7], [7, 3]];            // 孔洞（反绕向）
+  const alpha = raster.scanlineFill([outer, hole], 0, 0, 10, 10);
+  assert.equal(alpha[5 * 10 + 5], 0, '孔洞中心必须为空');
+  assert.equal(alpha[1 * 10 + 5], 255, '外环应填实');
+  assert.equal(alpha[5 * 10 + 8], 255, '外环右侧应填实');
+});
+
+test('raster: 单轮廓实心矩形不受影响', () => {
+  const rect = [[0, 0], [8, 0], [8, 8], [0, 8]];
+  const alpha = raster.scanlineFill([rect], 0, 0, 8, 8);
+  assert.equal(alpha[4 * 8 + 4], 255);
 });
