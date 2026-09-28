@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 编译（tsc -b）
+        run: npm run build
+
+      # SDF 字体工具依赖仅 Windows 安装：生成类用例依赖中文系统字体（C:/Windows/Fonts），
+      # ubuntu 上保持依赖缺失让 tests/fontgen.test.mjs 自动 skip（勿改 fontgen 源码）。
+      - name: fontgen 依赖（仅 Windows）
+        if: matrix.os == 'windows-latest'
+        run: npm install --prefix tools/fontgen
+
+      - name: 单元测试
+        run: npm test
+
+      - name: 配置校验
+        run: node tools/validate-config.mjs
+
+      - name: 架构禁令
+        run: node tools/check-import-rules.mjs
+
+      - name: 网页端生产构建
+        run: npm run build:web
+
+      - name: 上传 web 产物
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist
+          retention-days: 7
+
+  # ---- wx-artifact（S6 构建管线落地后接入，勿删占位）----
+  # wx-build:
+  #   needs: check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with: { node-version: 24, cache: npm }
+  #     - run: npm ci
+  #     - run: node tools/build-wx.mjs            # S6 交付
+  #     - name: 主包体积门禁（>4MB fail）
+  #       run: node tools/check-wx-size.mjs       # S6 交付
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: wx-dist
+  #         path: apps/wx/dist
