@@ -22,10 +22,13 @@ export function validateFile(name: string, data: unknown): string[] {
   if (!file || typeof file !== 'object') return [`${name}: 不是 JSON 对象`];
   if (typeof file.configVersion !== 'string') errors.push(`${name}: 缺少 configVersion`);
 
-  // game / economy：参数集，只查 params 是非空对象；game 另有技术段 ui 的数值范围校验
+  // game / economy：参数集，只查 params 是非空对象；game 另有技术段 ui/telemetry 的数值范围校验
   if (name === 'game' || name === 'economy') {
     if (!file.params || typeof file.params !== 'object') errors.push(`${name}: 缺少 params 对象`);
-    if (name === 'game' && file.params) errors.push(...validateUiParams((file.params as Record<string, unknown>).ui));
+    if (name === 'game' && file.params) {
+      const params = file.params as Record<string, unknown>;
+      errors.push(...validateUiParams(params.ui), ...validateTelemetryParams(params.telemetry));
+    }
     return errors;
   }
   // obstacles：三段结构分别校验
@@ -174,6 +177,79 @@ export function validateUiParams(ui: unknown): string[] {
     if (typeof v !== 'number' || !Number.isFinite(v)) { errors.push(`${where}: 应为有限数值（得到 ${JSON.stringify(v)}）`); continue; }
     const lo = rule.minOpen ? v > rule.min : v >= rule.min;
     if (!lo || v > rule.max) errors.push(`${where}: ${v} 超出范围 ${rule.minOpen ? '(' : '['}${rule.min}, ${rule.max}]`);
+  }
+  return errors;
+}
+
+/**
+ * 技术段 params.telemetry（S16 遥测，docs/telemetry-spec.md §5；与 ui 段同风格）。
+ * 缺省段/字段不报错（运行时 readTelemetryConfig 按缺省兜底并钳制）；出现即校验类型与范围，
+ * 范围与运行时钳制区间一致（CI 挡住手滑数值，防热更新链路带病发布）。
+ */
+const TELEMETRY_LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'];
+
+export function validateTelemetryParams(telemetry: unknown): string[] {
+  if (telemetry === undefined) return [];
+  if (!telemetry || typeof telemetry !== 'object' || Array.isArray(telemetry)) {
+    return ['game.params.telemetry: 应为对象（技术段，S16）'];
+  }
+  const errors: string[] = [];
+  const t = telemetry as Record<string, unknown>;
+  const W = 'game.params.telemetry';
+
+  const chkBool = (src: Record<string, unknown>, key: string, where: string): void => {
+    const v = src[key];
+    if (v !== undefined && typeof v !== 'boolean') errors.push(`${where}.${key}: 应为布尔（得到 ${JSON.stringify(v)}）`);
+  };
+  const chkNum = (src: Record<string, unknown>, key: string, min: number, max: number, where: string): void => {
+    const v = src[key];
+    if (v === undefined) return;
+    if (typeof v !== 'number' || !Number.isFinite(v)) { errors.push(`${where}.${key}: 应为有限数值（得到 ${JSON.stringify(v)}）`); return; }
+    if (v < min || v > max) errors.push(`${where}.${key}: ${v} 超出范围 [${min}, ${max}]`);
+  };
+  const chkStr = (src: Record<string, unknown>, key: string, where: string): void => {
+    const v = src[key];
+    if (v !== undefined && typeof v !== 'string') errors.push(`${where}.${key}: 应为字符串（得到 ${JSON.stringify(v)}）`);
+  };
+  const section = (key: string): Record<string, unknown> | undefined => {
+    const v = t[key];
+    if (v === undefined) return undefined;
+    if (!v || typeof v !== 'object' || Array.isArray(v)) { errors.push(`${W}.${key}: 应为对象`); return undefined; }
+    return v as Record<string, unknown>;
+  };
+
+  chkBool(t, 'enabled', W);
+  if (t.minLevel !== undefined && (typeof t.minLevel !== 'string' || !TELEMETRY_LEVELS.includes(t.minLevel))) {
+    errors.push(`${W}.minLevel: 应为 ${TELEMETRY_LEVELS.join('|')} 之一（得到 ${JSON.stringify(t.minLevel)}）`);
+  }
+  const sr = section('sampleRates');
+  if (sr) for (const key of Object.keys(sr)) chkNum(sr, key, 0, 100, `${W}.sampleRates`);
+  const rl = section('rateLimit');
+  if (rl) { chkNum(rl, 'perNamePerMin', 1, 100000, `${W}.rateLimit`); chkNum(rl, 'maxBytesPerMin', 1024, 10485760, `${W}.rateLimit`); }
+  const b = section('batch');
+  if (b) {
+    chkNum(b, 'maxEvents', 1, 200, `${W}.batch`);
+    chkNum(b, 'maxBytesPerFlush', 1024, 65536, `${W}.batch`); // sendBeacon 体积安全线（spec §3.4）
+    chkNum(b, 'maxDelayMs', 0, 600000, `${W}.batch`);
+    chkBool(b, 'flushOnHide', `${W}.batch`);
+    chkNum(b, 'retry', 0, 3, `${W}.batch`);
+  }
+  const e = section('error');
+  if (e) {
+    if (e.sample !== undefined && e.sample !== 0 && e.sample !== 100) {
+      errors.push(`${W}.error.sample: 仅允许 0|100（应急总开关不半采，spec D4；得到 ${JSON.stringify(e.sample)}）`);
+    }
+    chkNum(e, 'maxStackBytes', 256, 65536, `${W}.error`);
+    chkNum(e, 'dedupWindowMs', 0, 3600000, `${W}.error`);
+  }
+  const m = section('memory');
+  if (m) chkNum(m, 'sampleEveryS', 1, 3600, `${W}.memory`);
+  const tr = section('transport');
+  if (tr) {
+    chkStr(tr, 'webEndpoint', `${W}.transport`);
+    chkBool(tr, 'wxRealtimeLog', `${W}.transport`);
+    chkStr(tr, 'wxCloudCollection', `${W}.transport`);
+    chkBool(tr, 'mirrorOfficial', `${W}.transport`);
   }
   return errors;
 }

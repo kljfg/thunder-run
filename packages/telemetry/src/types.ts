@@ -1,18 +1,15 @@
 /**
- * 遥测与日志框架类型草案（S16a 产出 · 评审稿，配套文档 docs/telemetry-spec.md）
- *
- * 定位：接口契约，不含实现。S16b 以此为基线落 packages/telemetry（正式化时可拆分文件），
- * web/wx sink 分别落 packages/platform-web 与 packages/platform-wx。
- *
- * 自包含验证（不依赖 DOM lib，不挂仓库 tsconfig；--typeRoots 指向空目录以禁用
- * node_modules/@types 自动注入——仓库根的 @types/three|webxr 无 DOM lib 时会编译失败，与本草案无关）：
- *   npx tsc --noEmit --strict --target es2020 --lib es2020 --module esnext \
- *     --typeRoots <空目录> drafts/telemetry.ts
- *   （与 DOM lib 共存：改 --lib es2020,dom，无需 typeRoots，同样通过）
- *
- * 基线：dev@87ce734。§5 结果摘要与 tools/replay/runner.mjs runReplay() 返回结构逐字对齐
- * （docs/replay-format.md §4/§7）；§7 TelemetryHost 是 PlatformAdapter v2 的结构子集
- * （docs/platform-adapter-v2.md §3），v2 adapter 对象天然满足。
+ * 遥测与日志框架类型契约（S16b 定稿，自 drafts/telemetry.ts 迁入；规格 docs/telemetry-spec.md）。
+ * 纯逻辑包：本文件只有类型与枚举常量；实现分布在 canonical/buckets/frameDist/config/
+ * errorSerialize/limiter/pipeline/noop/digests/sdk/wxChannel，桶经 index.ts barrel 再导出。
+ * 草案 §9 sink 工厂的定稿落位：web → packages/platform-web/src/telemetryChannel.ts；
+ * wx → 本包 wxChannel.ts（结构化注入宿主 API，platform-wx 的注册入口留 TODO，
+ * 接线点见 docs/telemetry-wiring.md §4——S6 并行期 platform-wx 锁定所致，规格 D1 的纯逻辑纪律不破）。
+ * 相对草案的定稿差异（全部加法，逐项见 PR 偏差清单）：
+ * - EmitOptions.name：error 通道的事件名载体（crash.uncaught/rejection/wxError）；
+ * - TelemetrySink.init：管线构造时回传 bootId/sid（wx 实时日志 setFilterMsg 需要）；
+ * - createTelemetry 第 4 参 common（spec §2 公共维度注入，可变对象、组装时读当前值）；
+ * - readTelemetryConfig 第 2 参 onWarn（钳制告警出口，纯逻辑包不触 console）。
  */
 
 // ============================================================
@@ -25,6 +22,12 @@ export type SamplePercent = number;
 /** 日志级别（序：trace < debug < info < warn < error < fatal）。 */
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
+/** 级别序（spec §3.1）；数值越大越严重。 */
+export const LOG_LEVELS: readonly LogLevel[] = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'];
+export const LOG_LEVEL_ORDER: Readonly<Record<LogLevel, number>> = {
+  trace: 0, debug: 1, info: 2, warn: 3, error: 4, fatal: 5,
+};
+
 /** 三通道。 */
 export type Channel = 'log' | 'metric' | 'error';
 
@@ -34,7 +37,7 @@ export type MetricKind = 'counter' | 'gauge' | 'timer' | 'histogram';
 /** 信封标量字段值（嵌套对象须先 canonicalJson 成字符串再入 fields）。 */
 export type Scalar = string | number | boolean | null;
 export type Fields = Record<string, Scalar>;
-/** tags 仅收低基数字符串维度（device/quality/env…）。 */
+/** tags 仅收低基数字符串维度（device/quality/env…）；高基数值（seed/runId）一律进 fields。 */
 export type Tags = Record<string, string>;
 
 /** on* 订阅退订函数（与 v2 adapter 的 Unsubscribe 同形）。 */
@@ -43,6 +46,8 @@ export type Unsubscribe = () => void;
 /** 发送优先级：now = 立即成批 + 不入可丢队列（crash 专用）。 */
 export interface EmitOptions {
   priority?: 'normal' | 'now';
+  /** error 通道事件名（crash.uncaught/crash.rejection/crash.wxError…）；缺省 crash.uncaught。 */
+  name?: TelemetryEventName | (string & {});
 }
 
 // ============================================================
@@ -57,7 +62,7 @@ export interface TelemetryEnvelope {
   readonly ts: number;
   /** Date.now() 墙钟，仅报表分日/排序辅助。 */
   readonly epochMs: number;
-  /** 会话内自 1 单调递增，断流检测。 */
+  /** 会话内自 1 单调递增，断流检测（过滤丢弃不占号，空洞仅来自 overflow/transport）。 */
   readonly seq: number;
   /** 冷启动标识（12 hex，仅内存）。 */
   readonly bootId: string;
@@ -72,8 +77,11 @@ export interface TelemetryEnvelope {
   readonly tags?: Tags;
 }
 
-/** 规范序列化：语义与 tools/replay/runner.mjs:35-44 同款（键递归字典序、无空白）。 */
-export declare function canonicalJson(value: unknown): string;
+/** sessionId 的 storage 键（spec §2，沿用项目 thunderrun: 前缀规范）。 */
+export const SESSION_STORAGE_KEY = 'thunderrun:telemetry:session';
+
+/** 信封版本（接收端遇未知大版本拒绝入库）。 */
+export const ENVELOPE_VERSION = 1;
 
 // ============================================================
 // §2 事件名与枚举（spec §4）
@@ -167,26 +175,7 @@ export interface DroppedPayload { reason: DropReason; name?: string; count: numb
 export interface FlushPayload { ok: boolean; events: number; bytes: number; ms: number; retry: number }
 
 // ============================================================
-// §4 帧时间分桶（spec §4.2 规范常量，S19b perf bench 强制复用）
-// ============================================================
-
-/** 桶边界（左闭右开，ms）；11 个边界 + ∞ = 12 桶，最后一桶为 >200ms 溢出桶。 */
-export declare const FRAME_BUCKET_EDGES_MS: readonly number[];
-export declare const FRAME_BUCKET_COUNT: number;                 // 12
-/** ∞ 桶百分位插值封顶（p*Approx 标记时使用的近似值）。 */
-export declare const FRAME_OVERFLOW_CAP_MS: number;              // 400
-
-export declare function bucketIndexOf(frameMs: number): number;
-/** 就地累加一帧（run 主循环逐帧调用，O(1)、零分配复用数组）。 */
-export declare function accumulateFrameBucket(buckets: number[], frameMs: number): void;
-
-/** nearest-rank：ceil(q·frames)-1；q 用百分比（如 p95 → 95）。 */
-export declare function percentileNearestRank(qPercent: SamplePercent, frames: number): number;
-/** 桶计数 → ms（桶内均匀假设线性插值；∞ 桶封顶并置 approx）。 */
-export declare function percentileFromBuckets(qPercent: SamplePercent, frames: number, buckets: readonly number[]): { ms: number; approx: boolean };
-
-// ============================================================
-// §5 对局结果摘要（spec §8，与 replay-format §4 / runner.mjs 逐字对齐）
+// §4 对局结果摘要（spec §8，与 replay-format §4 / runner.mjs 逐字对齐）
 // ============================================================
 
 /** sim.summary() 字段快照（t/distance/coins/nearMiss/hits/score/alive/casts/charId）。 */
@@ -224,7 +213,7 @@ export interface AnticheatRejectPayload {
 }
 
 // ============================================================
-// §6 config 技术段 params.telemetry（spec §5）
+// §5 config 技术段 params.telemetry（spec §5）
 // ============================================================
 
 export interface TelemetrySampleRates { default: SamplePercent; [name: string]: SamplePercent }
@@ -239,17 +228,8 @@ export interface TelemetryConfig {
   transport: { webEndpoint: string; wxRealtimeLog: boolean; wxCloudCollection: string; mirrorOfficial: boolean };
 }
 
-/** spec §5 JSON 缺省值的类型化镜像。 */
-export declare const TELEMETRY_CONFIG_DEFAULTS: TelemetryConfig;
-
-/**
- * 从 game.json 的 params 解析本节：缺节/非对象 → undefined（调用方 → noop 管线）；
- * 越界数值钳制（sample 0..100、maxEvents 1..200、maxBytesPerFlush ≤64KiB）并对每次钳制 warn 一条。
- */
-export declare function readTelemetryConfig(params: Record<string, unknown> | undefined): TelemetryConfig | undefined;
-
 // ============================================================
-// §7 宿主注入面（v2 adapter 的结构子集，spec §1/D1）
+// §6 宿主注入面（v2 adapter 的结构子集，spec §1/D1）
 // ============================================================
 
 /** 与 PlatformAdapter v2 storage 逐字段兼容（S10 §3；'' 归一化由 v2 实现保证）。 */
@@ -261,7 +241,7 @@ export interface TelemetryStorageSync {
 
 /**
  * 管线所需的最小宿主能力：v2 adapter 对象直接满足（now/storage/onVisibility）。
- * 不含 fetch/cloud——那些属 sink 构造参数（§8），核心管线零传输依赖。
+ * 不含 fetch/cloud——那些属 sink 构造参数，核心管线零传输依赖。
  */
 export interface TelemetryHost {
   now(): number;
@@ -269,22 +249,39 @@ export interface TelemetryHost {
   onVisibility?(cb: (hidden: boolean) => void): Unsubscribe;
 }
 
+/**
+ * 管线组装时统一注入的公共维度（spec §2：tags{env,quality}、fields{engineVersion,configHash,device}）。
+ * 可变对象：管线在每次组装信封时读当前值——configHash 等在配置加载完成后回填（接线文档 §2.4）。
+ */
+export interface TelemetryCommonDimensions {
+  tags?: Tags;
+  fields?: Fields;
+}
+
 // ============================================================
-// §8 三通道接口与 sink（spec §3/§6/§7）
+// §7 三通道接口与 sink（spec §3/§6/§7）
 // ============================================================
+
+/** 管线构造时经 TelemetrySink.init 回传的会话标识（wx setFilterMsg(bootId) 等用）。 */
+export interface TelemetrySinkInfo {
+  bootId: string;
+  sid: string;
+}
 
 export interface TelemetrySink {
   readonly id: string;
-  /** 一批发出。返回 false / reject = 失败（管线重试 1 次后丢弃并计 dropped）。实现内部不得抛穿到调用方。 */
+  /** 一批发出。返回 false / reject = 失败（管线重试后丢弃并计 dropped）。实现内部不得抛穿到调用方。 */
   send(batch: readonly TelemetryEnvelope[]): Promise<boolean | void> | void;
   /** 可选：同步兜底通道（如 wx realtime log 镜像），在批入队同时立即调用。 */
   mirror?(envelope: TelemetryEnvelope): void;
+  /** 可选：管线构造完成时调用一次（回传 bootId/sid；晚于 sink 工厂、早于任何事件）。 */
+  init?(info: TelemetrySinkInfo): void;
 }
 
 export interface Telemetry {
   log(level: LogLevel, name: TelemetryEventName | (string & {}), fields?: Fields, opts?: EmitOptions): void;
   metric(name: TelemetryEventName | (string & {}), kind: MetricKind, val: number | readonly number[], tags?: Tags, opts?: EmitOptions): void;
-  /** err: Error | string | 未知值；内部 serializeError + 指纹去重（spec §3.3/§4.5）。 */
+  /** err: Error | string | 未知值；内部 serializeError + 指纹去重（spec §3.3/§4.5）。事件名经 opts.name。 */
   error(err: unknown, context?: Fields, opts?: EmitOptions): void;
   /** 子句柄：附加 runId/stage 等上下文（浅拷贝，共享父管线队列）。 */
   withScope(scope: Fields): Telemetry;
@@ -294,57 +291,4 @@ export interface Telemetry {
   destroy(): void;
   /** 环缓冲最近 n 条（?debug 探针 __trRun 数据源，spec §4.6）。 */
   recent(n: number): readonly TelemetryEnvelope[];
-}
-
-export declare function serializeError(err: unknown, maxStackBytes: number): Omit<CrashPayload, 'dupCount'>;
-
-/** FNV-1a 32 位（纯整数，双端/服务端可重算）。 */
-export declare function fnv1a32(text: string): number;
-/** 会话级稳定采样判定（spec §3.2）：fnv1a32(sid + '\u0000' + name) % 100 < rate。 */
-export declare function sampleAccepts(sid: string, name: string, rate: SamplePercent): boolean;
-
-/** 主管线工厂：sid/bootId 生成与持久化、信封组装、限流批处理都在内部。 */
-export declare function createTelemetry(host: TelemetryHost, cfg: TelemetryConfig, sinks: readonly TelemetrySink[]): Telemetry;
-
-// ============================================================
-// §9 sink 工厂签名（实现落 platform-web / platform-wx，spec §6/§7）
-// ============================================================
-
-/** web：console echo + 环缓冲。echoMetrics=false 时 metric 只入队不进控制台。 */
-export declare function createConsoleSink(opts?: { echoMetrics?: boolean; ringSize?: number }): TelemetrySink;
-/** web：sendBeacon 主、fetch keepalive 兜底。endpoint 空串 = 本 sink 不注册（spec §5）。 */
-export declare function createBeaconSink(endpoint: string): TelemetrySink;
-/** web：install crash 捕获（window.onerror / unhandledrejection → telemetry.error）。 */
-export declare function installWebErrorCapture(telemetry: Telemetry): Unsubscribe;
-/** wx：RealtimeLogManager 摘要镜像（name|k=v 单行；仅 warn/error 级与关键事件）。 */
-export declare function createRealtimeLogSink(): TelemetrySink;
-/** wx：云函数代收通道（invoke 即 extras.cloud.callFunction 的适配）。 */
-export declare function createCloudDbSink(
-  collection: string,
-  invoke: (name: string, payload: unknown) => Promise<unknown>,
-): TelemetrySink;
-/** wx：install crash 捕获（wx.onError / wx.onUnhandledRejection）。 */
-export declare function installWxErrorCapture(telemetry: Telemetry): Unsubscribe;
-
-// ============================================================
-// §10 no-op 实现骨架（证明接口面可被完整实现；S16b 直接搬进包内 noop.ts）
-// ============================================================
-
-function noopTelemetry(): Telemetry {
-  const nothing = (): void => {};
-  const emptyEnvelopes: readonly TelemetryEnvelope[] = [];
-  return {
-    log: nothing,
-    metric: nothing,
-    error: nothing,
-    withScope: () => noopTelemetry(),
-    measure: <T>(_name: string, fn: () => T | Promise<T>): Promise<T> => Promise.resolve(fn()),
-    flush: () => Promise.resolve(),
-    destroy: nothing,
-    recent: () => emptyEnvelopes,
-  };
-}
-
-export function createNoopTelemetry(): Telemetry {
-  return noopTelemetry();
 }

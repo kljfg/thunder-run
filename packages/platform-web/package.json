@@ -6,6 +6,7 @@
   "description": "PlatformAdapter v2 的网页（调试壳）实现，全项目唯一允许直接使用 DOM/BOM 输入输出 API 的包（UI 过渡层除外）。含 WxExtras 兜底。",
   "exports": { "./*": "./dist/*" },
   "dependencies": {
-    "@tr/platform": "*"
+    "@tr/platform": "*",
+    "@tr/telemetry": "*"
   }
 }

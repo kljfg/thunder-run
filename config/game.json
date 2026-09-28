@@ -145,6 +145,40 @@
         "lineHeightMul": 1.2
       }
     },
+    "telemetry": {
+      "enabled": true,
+      "minLevel": "info",
+      "sampleRates": {
+        "default": 100,
+        "perf.frameDist": 100,
+        "debug.probe": 0
+      },
+      "rateLimit": {
+        "perNamePerMin": 30,
+        "maxBytesPerMin": 65536
+      },
+      "batch": {
+        "maxEvents": 30,
+        "maxBytesPerFlush": 16384,
+        "maxDelayMs": 5000,
+        "flushOnHide": true,
+        "retry": 1
+      },
+      "error": {
+        "sample": 100,
+        "maxStackBytes": 4096,
+        "dedupWindowMs": 60000
+      },
+      "memory": {
+        "sampleEveryS": 10
+      },
+      "transport": {
+        "webEndpoint": "",
+        "wxRealtimeLog": true,
+        "wxCloudCollection": "telemetry",
+        "mirrorOfficial": false
+      }
+    },
     "flight": {
       "heightM": 4.6,
       "speedMul": 2.5,

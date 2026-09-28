@@ -1,0 +1,8 @@
+{
+  "name": "@tr/telemetry",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "遥测与日志框架（S16b）：三通道一条管线的纯逻辑包（级别过滤/采样/限流/去重/批处理/信封组装），传输经 TelemetrySink 注入。契约见 docs/telemetry-spec.md。",
+  "exports": { "./*": "./dist/*" }
+}
