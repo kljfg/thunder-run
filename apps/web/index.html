@@ -7,11 +7,11 @@
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <!-- 所有页面与画布都渲染进 #screen（ui/screens.ts 与 bootstrap.ts 共用此容器） -->
-  <main id="screen"></main>
+  <!-- S5 起页面全部自绘（packages/game/src/ui）：这里只剩挂载点与静态占位文案（UI 就绪即清） -->
+  <main id="screen">正在加载资源…</main>
   <!-- Vite 入口：Three.js 等依赖由 @tr/render 的 npm 依赖解析（不再走 importmap） -->
   <script type="module" src="/src/bootstrap.ts"></script>
-  <!-- S4 自绘 UI 演示页（?ui=demo 时接管屏幕；平时立即返回，不影响 bootstrap） -->
+  <!-- S4 自绘 UI 演示页（?ui=demo 时接管屏幕；独立于 bootstrap，平时立即返回） -->
   <script type="module" src="/src/uiDemo.ts"></script>
 </body>
 </html>

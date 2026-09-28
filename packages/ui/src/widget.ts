@@ -39,7 +39,24 @@ export interface WidgetEnv {
 export abstract class Widget {
   /** bind 时由 env.nextId 分配（全树唯一，InputRouter 注册键） */
   id = '';
-  visible = true;
+  private _visible = true;
+  /**
+   * 可见性。false 时退出布局（Box.node 过滤）——但 sync 随之不再运行，
+   * 视觉对象的隐藏必须由 applyVisible 级联即时完成（S5 缺陷修复：此前置 false 会留下残影网格）。
+   */
+  get visible(): boolean { return this._visible; }
+  set visible(v: boolean) {
+    if (this._visible === v) return;
+    this._visible = v;
+    this.applyVisible(v);
+  }
+
+  /** 容器覆写：把自己的生效可见性级联给背景与子控件（v 已含父链状态） */
+  /** 内部级联机制（public 仅为跨实例调用；业务请用 visible） */
+  applyVisible(v: boolean): void { this.onVisible(v); }
+
+  /** 自身视觉对象响应生效可见性变化（bind 前调用需自行判空） */
+  protected onVisible(_v: boolean): void {}
   protected env: WidgetEnv | null = null;
 
   bind(env: WidgetEnv): void {

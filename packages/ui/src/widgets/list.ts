@@ -196,6 +196,11 @@ export class List extends Widget {
     for (const s of this.slots) s.widget.visit(fn);
   }
 
+  override applyVisible(v: boolean): void {
+    super.applyVisible(v);
+    for (const s of this.slots) s.widget.applyVisible(v && s.widget.visible);
+  }
+
   pixelRatioChanged(): void { for (const s of this.slots) s.widget.pixelRatioChanged(); }
 
   dispose(): void {

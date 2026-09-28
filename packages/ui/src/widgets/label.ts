@@ -49,6 +49,7 @@ export class Label extends Widget {
       opacity: this.opts.opacity ?? 1,
       pixelRatio: env.pixelRatio,
     });
+    this.mesh.object.visible = this.visible; // 构造期置 false 的初始可见性在网格创建时落地
     env.stage.add(this.mesh.object);
   }
 
@@ -94,10 +95,22 @@ export class Label extends Widget {
     mesh.object.position.set(r.x, -r.y, 0);
     mesh.object.visible = this.visible;
     mesh.setPaint(ctx);
-    if (this.opts.maxWidthPx === undefined && r.w > 0 && Math.abs(r.w - this.hintWidth) > 0.5) {
-      this.hintWidth = r.w;
-      this.requireEnv().invalidate(); // 下一帧按实际盒宽重测（两遍收敛）
+    // hintWidth 两遍收敛：盒宽≠自然宽说明宽度由父级决定（stretch 拉宽或定宽折行），
+    // 回填盒宽让文本按它排版；盒宽==自然宽则是 auto 标签，不回填（S5 缺陷修复：
+    // 此前无条件回填会把 auto 标签首帧短文本的窄宽锁死，长文本竖排成列）。
+    if (this.opts.maxWidthPx === undefined && r.w > 0) {
+      const env = this.requireEnv();
+      const natural = measureText(env.fonts, this.text, this.style(undefined)).w;
+      const want = Math.abs(r.w - natural) > 0.5 ? r.w : 0;
+      if (Math.abs(want - this.hintWidth) > 0.5) {
+        this.hintWidth = want;
+        env.invalidate(); // 下一帧按实际盒宽重测（两遍收敛）
+      }
     }
+  }
+
+  protected override onVisible(v: boolean): void {
+    if (this.mesh) this.mesh.object.visible = v;
   }
 
   pixelRatioChanged(): void {

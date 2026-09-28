@@ -17,14 +17,23 @@ export function repoRoot(from = HERE) {
   return resolve(from, '..', '..');
 }
 
-/** 待扫描文件清单：screens.ts（两个历史路径取存在者）+ S4 演示页文案 + config/*.json。 */
+/** 待扫描文件清单：页面文案源 + S4 演示页 + config/*.json。 */
 export function scanTargets(root) {
   const files = [];
-  for (const rel of ['src/ui/screens.ts', 'apps/web/src/ui/screens.ts']) {
-    const p = join(root, rel);
-    try { readFileSync(p, 'utf8'); files.push(p); break; } catch { /* 下一个候选 */ }
-  }
-  // S4 起自绘 UI 文案入库即入字符集（?ui=demo 验收页；S5 页面迁移后在此追加页面源）
+  // S5 页面迁移：screens.ts 退役，自绘 UI 文案源 = packages/game/src/**/*.ts
+  // （src/ui 页面 + mainFlow 的 toast/错误等经 GameViews 上树的文案，全部入库即入字符集）
+  const pagesRoot = join(root, 'packages', 'game', 'src');
+  const walkTs = (dir) => {
+    let names = [];
+    try { names = readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const e of names) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walkTs(p);
+      else if (e.name.endsWith('.ts')) files.push(p);
+    }
+  };
+  walkTs(pagesRoot);
+  // S4 起自绘 UI 文案入库即入字符集（?ui=demo 验收页）
   for (const rel of ['apps/web/src/uiDemoView.ts']) {
     const p = join(root, rel);
     try { readFileSync(p, 'utf8'); files.push(p); } catch { /* 尚未落地则跳过 */ }

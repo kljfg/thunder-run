@@ -1,8 +1,9 @@
 /**
- * GameViews —— 主流程对「页面视图」的结构化要求（@tr/game，S3 提取）。
- * apps/web 用 DOM screens.ts 实现（过渡期；S5 换 packages/ui 后两端同源）；
- * apps/wx 在 S5 前走空场景主流程（emptyMain.ts），不实现本接口。
- * 本包受禁令约束：这里禁止出现任何 DOM/wx 类型，视图内部长什么样由 apps 自决。
+ * GameViews —— 主流程对「页面视图」的结构化要求（@tr/game，S3 提取；S5 起接口不变）。
+ * S5：apps/web 与未来的 apps/wx 统一用 overlay 版实现（packages/game/src/ui/overlayViews.ts，
+ * 基于 @tr/ui 自绘控件，两端同源）；DOM screens.ts 已退役。壳侧装配差异（renderer/canvas/
+ * 输入注入/onKey）经 UiHost 端口进入，不扩本接口。
+ * 本包受禁令约束：这里禁止出现任何 DOM/wx 类型，视图内部长什么样由实现方自决。
  */
 import type { GameContent } from '@tr/core/config/configTypes.js';
 import type { FileSource } from '@tr/core/config/configLoader.js';
